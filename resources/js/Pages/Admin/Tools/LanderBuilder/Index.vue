@@ -60,4 +60,5 @@ const submit = () => {
  */
 const previewLander = () => {
 
-}
+};
+</script>
