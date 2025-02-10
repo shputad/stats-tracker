@@ -13,7 +13,7 @@
             <thead>
                 <tr>
                     <th class="border border-gray-300 p-2">Name</th>
-                    <th class="border border-gray-300 p-2">URL</th>
+                    <th class="border border-gray-300 p-2" style="max-width: 400px; overflow: hidden;">URL</th>
                     <th class="border border-gray-300 p-2">Status</th>
                     <th class="border border-gray-300 p-2">Actions</th>
                 </tr>
@@ -21,13 +21,13 @@
             <tbody>
                 <tr v-for="link in links" :key="link.id">
                     <td class="border border-gray-300 p-2">{{ link.name }}</td>
-                    <td class="border border-gray-300 p-2">
+                    <td class="border border-gray-300 p-2" style="max-width: 400px; overflow: hidden;">
                         <a 
                             :href="link.url" 
                             target="_blank" 
                             class="text-blue-600 underline truncate block" 
                             :title="link.url"
-                            style="max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                            style="max-width:100%; white-space: break-spaces; text-overflow: ellipsis; word-break: break-word;"
                         >
                             {{ link.url }}
                         </a>

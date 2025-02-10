@@ -18,16 +18,16 @@ class LinkStatController extends Controller
     {
         $stats = $link->linkStats()->latest()->get();
 
-        $statsWithDifferences = $stats->map(function ($stat) use ($link) {
+        $statsWithDifferences = $stats->map(function ($stat, $index) use ($link, $stats) {
             // Get the log value from the oldest record available in the last 10 minutes
             $logsBefore10Minutes = $link->linkStats()
-                ->whereBetween('created_at', [$stat->created_at->subMinutes(10), $stat->created_at])
+                ->whereBetween('created_at', [$stat->created_at->copy()->subMinutes(10)->startOfMinute(), $stat->created_at->copy()->startOfMinute()])
                 ->orderBy('created_at', 'asc')
                 ->value('log') ?? 0;
 
             // Get the log value from the oldest record available in the last hour
             $logsBeforeHour = $link->linkStats()
-                ->whereBetween('created_at', [$stat->created_at->subMinutes(60), $stat->created_at])
+                ->whereBetween('created_at', [$stat->created_at->copy()->subMinutes(60)->startOfMinute(), $stat->created_at->copy()->startOfMinute()])
                 ->orderBy('created_at', 'asc')
                 ->value('log') ?? 0;
 
@@ -45,6 +45,12 @@ class LinkStatController extends Controller
                 ->whereDate('created_at', $stat->created_at->toDateString())
                 ->orderBy('created_at', 'asc')
                 ->value('log') ?? 0;
+
+            // For the first record, ensure differences are zero
+            if ($index === ($stats->count() - 1)) {
+                $logsBefore10Minutes = $stat->log;
+                $logsBeforeHour = $isFirstStatOfHour ? ($logsBeforeHour !== null ? $stat->log : null) : null;
+            }
 
             return [
                 'id' => $stat->id,
@@ -67,7 +73,9 @@ class LinkStatController extends Controller
      */
     public function create(Link $link)
     {
-        //
+        return Inertia::render('Admin/Links/Stats/Create', [
+            'link' => $link
+        ]);
     }
 
     /**
@@ -75,7 +83,14 @@ class LinkStatController extends Controller
      */
     public function store(Request $request, Link $link)
     {
-        //
+        $request->validate([
+            'link_id' => 'required|exists:links,id',
+            'log' => 'required|integer|min:0'
+        ]);
+
+        LinkStat::create($request->all());
+
+        return redirect()->route('admin.links.stats.index', $link->id);
     }
 
     /**
@@ -91,7 +106,10 @@ class LinkStatController extends Controller
      */
     public function edit(Link $link, LinkStat $stat)
     {
-        //
+        return Inertia::render('Admin/Links/Stats/Edit', [
+            'link' => $link,
+            'stat' => $stat
+        ]);
     }
 
     /**
@@ -99,7 +117,14 @@ class LinkStatController extends Controller
      */
     public function update(Request $request, Link $link, LinkStat $stat)
     {
-        //
+        $request->validate([
+            'link_id' => 'required|exists:links,id',
+            'log' => 'required|integer|min:0'
+        ]);
+
+        $stat->update($request->all());
+
+        return redirect()->route('admin.links.stats.index', $request->get('link_id'));
     }
 
     /**
@@ -107,6 +132,8 @@ class LinkStatController extends Controller
      */
     public function destroy(Link $link, LinkStat $stat)
     {
-        //
+        $stat->delete();
+
+        return redirect()->route('admin.links.stats.index', $link->id);
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\NetworkProfileController as AdminNetworkProfileCo
 use App\Http\Controllers\Admin\NetworkProfileStatController as AdminNetworkProfileStatController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\ToolsController as AdminToolsController;
 use App\Http\Controllers\User\LinkStatController as UserLinkStatController;
 use App\Http\Controllers\User\NetworkProfileController as UserNetworkProfileController;
 use App\Http\Controllers\User\NetworkProfileStatController as UserNetworkProfileStatController;
@@ -63,8 +64,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('settings', [AdminSettingController::class, 'index'])->name('settings.index');
     Route::post('settings', [AdminSettingController::class, 'update'])->name('settings.update');
 
+    // Tools
+    Route::get('tools', [AdminToolsController::class, 'index'])->name('tools.index');
+    Route::get('tools/command-builder', [AdminToolsController::class, 'commandBuilder'])->name('tools.commandbuilder.index');
+    Route::get('tools/lander-builder', [AdminToolsController::class, 'landerBuilder'])->name('tools.landerbuilder.index');
+
+    // Command Builder API
+    Route::post('tools/command-builder/generate', [AdminToolsController::class, 'generateCommand'])->name('tools.commandbuilder.generate');
+    Route::post('tools/command-builder/export', [AdminToolsController::class, 'exportCommand'])->name('tools.commandbuilder.export');
+    Route::post('tools/command-builder/test', [AdminToolsController::class, 'testCommand'])->name('tools.commandbuilder.test');
+
     // Sub-Routes
-    Route::resource('links.stats', AdminLinkStatController::class)->only(['index']);
+    Route::resource('links.stats', AdminLinkStatController::class);
     Route::resource('network-profiles/{profile}/stats', AdminNetworkProfileStatController::class);
 });
 

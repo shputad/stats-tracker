@@ -2,7 +2,9 @@
     <Head title="Edit Link" />
 
     <AdminLayout>
-        <h1 class="text-2xl font-bold mb-6">Edit Link</h1>
+        <h1 class="text-2xl font-bold mb-6">
+            <GoBack :href="`/admin/links`"></GoBack> Edit Link
+        </h1>
         <form @submit.prevent="submit">
             <div class="mb-4">
                 <label for="name" class="block text-gray-700">Name</label>
@@ -31,6 +33,7 @@
 </template>
 
 <script setup>
+import GoBack from '@/components/GoBack.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, usePage, Link } from '@inertiajs/vue3';
 

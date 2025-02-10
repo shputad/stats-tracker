@@ -59,6 +59,15 @@
                     </Link>
                 </li>
                 <li>
+                    <Link
+                        :href="'/admin/tools'"
+                        class="block py-2 cursor-pointer"
+                        :class="{ 'text-orange-200': currentRoute.includes('/admin/tools'), 'hover:text-gray-300': !currentRoute.includes('/admin/tools') }"
+                    >
+                        <i class="fas fa-tools mr-2"></i> Tools
+                    </Link>
+                </li>
+                <li>
                     <button 
                         @click.prevent="logout" 
                         class="block w-full text-left py-2 text-red-600 hover:text-red-400 mt-4"

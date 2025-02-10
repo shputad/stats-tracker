@@ -4,16 +4,6 @@
     <AdminLayout>
         <h1 class="text-2xl font-bold mb-6">Admin Settings</h1>
 
-        <!-- Success Message -->
-        <div v-if="flash.success" class="mb-4 p-4 bg-green-100 text-green-700 rounded">
-            {{ flash.success }}
-        </div>
-
-        <!-- Error Message -->
-        <div v-if="flash.error" class="mb-4 p-4 bg-red-100 text-red-700 rounded">
-            {{ flash.error }}
-        </div>
-
         <form @submit.prevent="submit">
             <div class="mb-4">
                 <label for="link_stats_update_interval" class="block text-gray-700">
@@ -68,6 +58,19 @@
                 />
                 <span v-if="form.errors.twocaptcha_api_key" class="text-red-600 text-sm">
                     {{ form.errors.twocaptcha_api_key }}
+                </span>
+            </div>
+
+            <div class="mb-4">
+                <label for="google_cloud_run_url" class="block text-gray-700">Google Cloud Run URL</label>
+                <input
+                    v-model="form.google_cloud_run_url"
+                    type="text"
+                    id="google_cloud_run_url"
+                    class="mt-1 block w-full border-gray-300 rounded-md"
+                />
+                <span v-if="form.errors.google_cloud_run_url" class="text-red-600 text-sm">
+                    {{ form.errors.google_cloud_run_url }}
                 </span>
             </div>
 
@@ -146,8 +149,10 @@
 
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { useToast } from 'vue-toastification';
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 
+const toast = useToast();
 const { props } = usePage();
 
 const form = useForm({
@@ -155,6 +160,7 @@ const form = useForm({
     profile_stats_update_interval: props.settings.profile_stats_update_interval || '',
     capmonster_api_key: props.settings.capmonster_api_key || '',
     twocaptcha_api_key: props.settings.twocaptcha_api_key || '',
+    google_cloud_run_url: props.settings.google_cloud_run_url || '',
     proxy_type: props.settings.proxy_type || '',
     proxy_address: props.settings.proxy_address || '',
     proxy_port: props.settings.proxy_port || '',
@@ -168,7 +174,10 @@ const submit = () => {
     form.post(route('admin.settings.update'), {
         preserveScroll: true,
         onSuccess: () => {
-            router.visit(route('admin.settings.index'), { only: ['flash'] });
+            toast.success('Settings updated successfully!');
+        },
+        onError: () => {
+            toast.error('Error updating settings.');
         },
     });
 };

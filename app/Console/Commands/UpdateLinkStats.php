@@ -32,23 +32,34 @@ class UpdateLinkStats extends Command
     public function handle()
     {
         $links = Link::where('status', 'active')->get();
+        $apiKey = Setting::where('key', 'twocaptcha_api_key')->value('value');
+        $cloudRunUrl = Setting::where('key', 'google_cloud_run_url')->value('value');
+
+        if (!$cloudRunUrl) {
+            $this->error("Cloud Run URL not found in settings.");
+            Log::error("Cloud Run URL is missing from settings.");
+            return Command::FAILURE;
+        }
 
         foreach ($links as $link) {
             try {
-                $result = $this->fetchLogValue($link);
+                $result = $this->fetchLogValue($cloudRunUrl, $link, $apiKey);
 
-                if ($result && isset($result['logs'])) {
+                if ($result && isset($result['logsCount'])) {
                     // Save the logs in the LinkStat table
                     LinkStat::create([
                         'link_id' => $link->id,
-                        'log' => $result['logs'],
+                        'log' => $result['logsCount'],
                     ]);
 
-                    $this->info("Updated stats for link ID: {$link->id} - Logs: {$result['logs']}");
+                    $this->info("Updated stats for link ID: {$link->id} - Logs: {$result['logsCount']}");
                 }
             } catch (\Exception $e) {
                 $this->error("Error updating link ID: {$link->id} - " . $e->getMessage());
-                Log::error("Error updating link stats", ['link_id' => $link->id, 'error' => $e->getMessage()]);
+                Log::error("Error updating link stats", [
+                    'link_id' => $link->id, 
+                    'error' => $e->getMessage()
+                ]);
             }
         }
 
@@ -58,26 +69,32 @@ class UpdateLinkStats extends Command
     /**
      * Fetch log value using the Node.js script
      */
-    private function fetchLogValue(Link $link): ?array
+    private function fetchLogValue(string $cloudRunUrl, Link $link, string $apiKey): ?array
     {
-        $apiKey = Setting::where('key', 'twocaptcha_api_key')->value('value');
-        $scriptPath = base_path('resources/js/captcha/fetch-logs.js');
+        try {
+            $response = Http::timeout(180)->post($cloudRunUrl, [
+                'url' => $link->url,
+                'api_key' => $apiKey,
+            ]);
 
-        // Use node command to fetch logs
-        $command = "node {$scriptPath} '{$link->url}' '{$apiKey}'";
-        $output = shell_exec($command);
+            $result = $response->json();
 
-        // Log the output for debugging purposes
-        Log::info('Node.js script output', ['output' => $output]);
+            if ($response->successful()) {
+                return $result;
+            }
 
-        // Parse the JSON output from the script
-        $result = json_decode($output, true);
-
-        if (json_last_error() === JSON_ERROR_NONE) {
-            return $result;
+            Log::error('Cloud Run API request failed', [
+                'link_id' => $link->id,
+                'status' => $response->status(),
+                'response' => $result
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error calling Cloud Run API', [
+                'link_id' => $link->id,
+                'error' => $e->getMessage()
+            ]);
         }
 
-        Log::error('Failed to parse Node.js script output', ['output' => $output]);
         return null;
     }
 }
