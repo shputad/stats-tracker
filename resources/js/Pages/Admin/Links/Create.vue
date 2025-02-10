@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import GoBack from '@/components/GoBack.vue';
+import GoBack from '@/Components/GoBack.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 
