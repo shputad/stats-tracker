@@ -71,6 +71,50 @@ class UpdateLinkStats extends Command
      */
     private function fetchLogValue(string $cloudRunUrl, Link $link, string $apiKey): ?array
     {
+        // Attempt the original request directly to the link
+        try {
+            $originalResponse = Http::timeout(180)->get($link->url);
+            if ($originalResponse->successful()) {
+                $content = $originalResponse->body();
+
+                // Use DomCrawler to parse the HTML content
+                $crawler = new \Symfony\Component\DomCrawler\Crawler($content);
+                $divNodes = $crawler->filter('div.font-weight-medium');
+
+                $logsCount = null;
+                // Iterate through each matching node to find one containing "логов"
+                foreach ($divNodes as $node) {
+                    $text = $node->textContent;
+                    if (strpos($text, 'логов') !== false) {
+                        // Extract the number preceding "логов"
+                        if (preg_match('/(\d+)\s*логов/u', $text, $matches)) {
+                            $logsCount = intval($matches[1]);
+                            break; // Once found, break out of the loop
+                        }
+                    }
+                }
+
+                if ($logsCount !== null) {
+                    Log::info("Stats fetched on original request");
+
+                    return ['logsCount' => $logsCount];
+                } else {
+                    Log::warning("No logs count found using 'логов' reference.", ['link_id' => $link->id]);
+                }
+            } else {
+                Log::warning("Original request to {$link->url} was not successful.", [
+                    'link_id' => $link->id,
+                    'status' => $originalResponse->status()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Exception during original request to {$link->url}.", [
+                'link_id' => $link->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Fallback: call the Cloud Run API if the original request failed or did not yield a logs count
         try {
             $response = Http::timeout(180)->post($cloudRunUrl, [
                 'url' => $link->url,
