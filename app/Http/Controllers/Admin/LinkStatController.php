@@ -14,11 +14,16 @@ class LinkStatController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Link $link)
+    public function index(Link $link, Request $request)
     {
-        $stats = $link->linkStats()->latest()->get();
+        $perPage = $request->get('per_page', 25);
 
-        $statsWithDifferences = $stats->map(function ($stat, $index) use ($link, $stats) {
+        $statsPaginator = $link->linkStats()
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $statsWithDifferences = $statsPaginator->getCollection()->map(function ($stat, $index) use ($link, $statsPaginator) {
             // Get the log value from the oldest record available in the last 10 minutes
             $logsBefore10Minutes = $link->linkStats()
                 ->whereBetween('created_at', [$stat->created_at->copy()->subMinutes(10)->startOfMinute(), $stat->created_at->copy()->startOfMinute()])
@@ -47,7 +52,7 @@ class LinkStatController extends Controller
                 ->value('log') ?? 0;
 
             // For the first record, ensure differences are zero
-            if ($index === ($stats->count() - 1)) {
+            if ($index === ($statsPaginator->getCollection()->count() - 1)) {
                 $logsBefore10Minutes = $stat->log;
                 $logsBeforeHour = $isFirstStatOfHour ? ($logsBeforeHour !== null ? $stat->log : null) : null;
             }
@@ -62,9 +67,11 @@ class LinkStatController extends Controller
             ];
         });
 
+        $statsPaginator->setCollection($statsWithDifferences);
+
         return Inertia::render('Admin/Links/Stats/Index', [
             'link' => $link,
-            'stats' => $statsWithDifferences,
+            'stats' => $statsPaginator,
         ]);
     }
 

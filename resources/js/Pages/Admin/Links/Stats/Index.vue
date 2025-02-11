@@ -52,6 +52,23 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="flex justify-center mt-8">
+            <button
+                v-for="(paginationLink, index) in stats.links"
+                :key="index"
+                :class="[
+                    'mx-1 px-4 py-2 rounded border transition-colors duration-300',
+                    paginationLink.active
+                        ? 'bg-orange-400 text-white border-orange-400'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100',
+                    !paginationLink.url ? 'opacity-50 cursor-not-allowed' : ''
+                ]"
+                :disabled="!paginationLink.url"
+                @click="router.get(paginationLink.url)"
+                v-html="paginationLink.label"
+            ></button>
+        </div>
     </AdminLayout>
 </template>
 
@@ -61,15 +78,14 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { ref, computed } from 'vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 
-const { props } = usePage();
-const link = props.link;
-const stats = ref(props.stats);
+const { stats, link } = usePage().props;
 
 /**
  * Group stats by date
  */
  const groupedStats = computed(() => {
-    return stats.value.reduce((acc, stat) => {
+    if (!stats.data) return {};
+    return stats.data.reduce((acc, stat) => {
         const date = new Date(stat.created_at).toLocaleDateString();
         if (!acc[date]) acc[date] = [];
         acc[date].push(stat);
@@ -112,7 +128,7 @@ const deleteStat = async (id) => {
     if (confirm('Are you sure you want to delete this stat?')) {
         await router.delete(route('admin.links.stats.destroy', {link: link.id, stat: id}), {
             onSuccess: () => {
-                stats.value = stats.value.filter(stat => stat.id !== id);
+                stats.data = stats.data.filter(stat => stat.id !== id);
             },
         });
     }
