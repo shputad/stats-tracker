@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Link;
 use App\Models\LinkStat;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +17,8 @@ class LinkStatController extends Controller
      */
     public function index(Link $link, Request $request)
     {
-        $perPage = $request->get('per_page', 240);
+        $statsPerPage = Setting::where('key', 'stats_per_page')->value('value');
+        $perPage = $request->get('per_page', $statsPerPage ?: 25);
 
         $statsPaginator = $link->linkStats()
             ->latest()

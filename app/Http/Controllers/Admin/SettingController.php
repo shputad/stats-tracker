@@ -27,6 +27,7 @@ class SettingController extends Controller
         $request->validate([
             'link_stats_update_interval' => 'required|integer|min:1',
             'profile_stats_update_interval' => 'required|integer|min:1',
+            'stats_per_page' => 'required|integer|min:25',
             'capmonster_api_key' => 'nullable|string|max:255',
             'twocaptcha_api_key' => 'nullable|string|max:255',
             'google_cloud_run_url' => 'nullable|string|max:255',
@@ -43,6 +44,7 @@ class SettingController extends Controller
                 [
                     'link_stats_update_interval',
                     'profile_stats_update_interval',
+                    'stats_per_page',
                     'capmonster_api_key',
                     'twocaptcha_api_key',
                     'google_cloud_run_url',

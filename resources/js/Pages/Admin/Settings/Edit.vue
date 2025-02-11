@@ -36,6 +36,21 @@
             </div>
 
             <div class="mb-4">
+                <label for="stats_per_page" class="block text-gray-700">
+                    Stats Per Page
+                </label>
+                <input
+                    v-model="form.stats_per_page"
+                    type="number"
+                    id="stats_per_page"
+                    class="mt-1 block w-full border-gray-300 rounded-md"
+                />
+                <span v-if="form.errors.stats_per_page" class="text-red-600 text-sm">
+                    {{ form.errors.stats_per_page }}
+                </span>
+            </div>
+
+            <div class="mb-4">
                 <label for="capmonster_api_key" class="block text-gray-700">CapMonster API Key</label>
                 <input
                     v-model="form.capmonster_api_key"
@@ -156,8 +171,9 @@ const toast = useToast();
 const { props } = usePage();
 
 const form = useForm({
-    link_stats_update_interval: props.settings.link_stats_update_interval || '',
-    profile_stats_update_interval: props.settings.profile_stats_update_interval || '',
+    link_stats_update_interval: props.settings.link_stats_update_interval || 10,
+    profile_stats_update_interval: props.settings.profile_stats_update_interval || 10,
+    stats_per_page: props.settings.stats_per_page || 25,
     capmonster_api_key: props.settings.capmonster_api_key || '',
     twocaptcha_api_key: props.settings.twocaptcha_api_key || '',
     google_cloud_run_url: props.settings.google_cloud_run_url || '',
