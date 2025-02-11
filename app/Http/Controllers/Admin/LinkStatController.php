@@ -16,7 +16,7 @@ class LinkStatController extends Controller
      */
     public function index(Link $link, Request $request)
     {
-        $perPage = $request->get('per_page', 25);
+        $perPage = $request->get('per_page', 240);
 
         $statsPaginator = $link->linkStats()
             ->latest()
