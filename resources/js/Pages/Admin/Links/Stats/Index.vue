@@ -1,4 +1,5 @@
 <template>
+
     <Head title="Link Stats" />
 
     <AdminLayout>
@@ -93,7 +94,7 @@
                 </div>
             </div>
 
-            <!-- Responsive Pagination (shown only if more than 3 links) -->
+            <!-- Responsive Pagination (only if there are more than 3 links) -->
             <div v-if="stats.links && stats.links.length > 3" class="flex justify-center mt-8">
                 <button v-for="(paginationLink, index) in stats.links" :key="index" :class="[
                     'mx-1 px-4 py-2 rounded border transition-colors duration-300',
@@ -113,13 +114,19 @@ import GoBack from '@/Components/GoBack.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 
 const { props } = usePage();
 const stats = ref(props.stats);
 const link = props.link;
 const isRefreshing = ref(false);
-const muteAnnouncement = ref(false);
+
+// Persist muteAnnouncement using localStorage
+const muteAnnouncement = ref(localStorage.getItem('muteAnnouncement') === 'true');
+watch(muteAnnouncement, (newValue) => {
+    localStorage.setItem('muteAnnouncement', newValue);
+});
+
 const nextRefreshTime = ref(null);
 const remainingTime = ref(0);
 
@@ -181,8 +188,8 @@ const deleteStat = async (id) => {
         showCancelButton: true,
         confirmButtonText: 'Yes, delete it!',
         cancelButtonText: 'Cancel',
-        confirmButtonColor: '#2563eb', // Tailwind blue-600
-        cancelButtonColor: '#6b7280',  // Tailwind gray-600
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6b7280',
     });
     if (result.isConfirmed) {
         await router.delete(route('admin.links.stats.destroy', { link: link.id, stat: id }), {
@@ -199,8 +206,8 @@ const deleteStat = async (id) => {
     }
 };
 
-// Dynamic auto-refresh using the setting: link_stats_update_interval (in minutes)
-// Add 1 minute to the first refresh time
+// Dynamic auto-refresh using setting: link_stats_update_interval (in minutes)
+// Add 1 minute to the first refresh time so that backend updates are available
 const updateIntervalMinutes = parseFloat(props.settings?.link_stats_update_interval) || 10;
 const updateIntervalMs = updateIntervalMinutes * 60000;
 
@@ -227,7 +234,7 @@ const refreshStats = () => {
         replace: true,
         onSuccess: (page) => {
             isRefreshing.value = false;
-            // Update stats with new data
+            // Update stats with new data from response
             stats.value = page.props.stats;
             if (!muteAnnouncement.value) {
                 announceLast10Logs();
