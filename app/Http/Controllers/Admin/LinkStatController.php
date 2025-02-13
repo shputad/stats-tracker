@@ -18,6 +18,7 @@ class LinkStatController extends Controller
     public function index(Link $link, Request $request)
     {
         $statsPerPage = Setting::where('key', 'stats_per_page')->value('value');
+        $statsUpdateInterval = Setting::where('key', 'link_stats_update_interval')->value('value');
         $perPage = $request->get('per_page', $statsPerPage ?: 25);
 
         $statsPaginator = $link->linkStats()
@@ -74,6 +75,7 @@ class LinkStatController extends Controller
         return Inertia::render('Admin/Links/Stats/Index', [
             'link' => $link,
             'stats' => $statsPaginator,
+            'settings' => ['link_stats_update_interval' => $statsUpdateInterval]
         ]);
     }
 
