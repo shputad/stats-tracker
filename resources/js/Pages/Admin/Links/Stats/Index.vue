@@ -22,6 +22,17 @@
                         class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700" title="Refresh Table">
                         <i class="fas fa-sync-alt" :class="{ 'animate-spin': isRefreshing }"></i>
                     </button>
+                    <!-- Mute Toggle (iOS-style) -->
+                    <label for="muteAnnouncement" class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="muteAnnouncement" v-model="muteAnnouncement" class="sr-only" />
+                            <div class="toggle-bg w-10 h-4 bg-gray-300 rounded-full shadow-inner"></div>
+                            <div
+                                class="toggle-dot absolute w-6 h-6 bg-white rounded-full shadow -left-1 -top-1 transition-transform duration-300">
+                            </div>
+                        </div>
+                        <div class="ml-2 text-sm text-gray-600">Mute</div>
+                    </label>
                 </div>
             </div>
 
@@ -82,7 +93,7 @@
                 </div>
             </div>
 
-            <!-- Responsive Pagination -->
+            <!-- Responsive Pagination (shown only if more than 3 links) -->
             <div v-if="stats.links && stats.links.length > 3" class="flex justify-center mt-8">
                 <button v-for="(paginationLink, index) in stats.links" :key="index" :class="[
                     'mx-1 px-4 py-2 rounded border transition-colors duration-300',
@@ -108,6 +119,7 @@ const { props } = usePage();
 const stats = ref(props.stats);
 const link = props.link;
 const isRefreshing = ref(false);
+const muteAnnouncement = ref(false);
 const nextRefreshTime = ref(null);
 const remainingTime = ref(0);
 
@@ -139,7 +151,7 @@ const groupedStats = computed(() => {
     }, {});
 });
 
-// Functions for arrow icons and percentage for "Last 10 minutes"
+// Functions for arrow icons and percentages for "Last 10 minutes" column
 const getChangeClass = (currentValue, rowIndex, key, group) => {
     const previousValue = rowIndex + 1 < group.length ? group[rowIndex + 1][key] : 0;
     if (currentValue > previousValue) return 'text-green-600 font-bold';
@@ -188,7 +200,7 @@ const deleteStat = async (id) => {
 };
 
 // Dynamic auto-refresh using the setting: link_stats_update_interval (in minutes)
-// Add 1 minute offset to ensure backend updates are available
+// Add 1 minute to the first refresh time
 const updateIntervalMinutes = parseFloat(props.settings?.link_stats_update_interval) || 10;
 const updateIntervalMs = updateIntervalMinutes * 60000;
 
@@ -213,10 +225,29 @@ const refreshStats = () => {
     router.visit(window.location.pathname + '?refresh=' + Date.now(), {
         preserveScroll: true,
         replace: true,
-        onFinish: () => {
+        onSuccess: (page) => {
             isRefreshing.value = false;
+            // Update stats with new data
+            stats.value = page.props.stats;
+            if (!muteAnnouncement.value) {
+                announceLast10Logs();
+            }
         },
     });
+};
+
+const announceLast10Logs = () => {
+    if (stats.value.data && stats.value.data.length > 0) {
+        const newestStat = stats.value.data[0];
+        const count = newestStat.last_10_minutes_diff;
+        const message =
+            count > 0
+                ? `In the last 10 minutes, ${count} logs were recorded.`
+                : `No new logs recorded in the last 10 minutes.`;
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    }
 };
 
 const updateRemainingTime = () => {
@@ -250,3 +281,47 @@ onUnmounted(() => {
     clearInterval(remainingTimer);
 });
 </script>
+
+<style scoped>
+/* iOS-style mute toggle */
+label.flex.items-center.cursor-pointer>div.relative {
+    display: inline-block;
+    width: 2.5rem;
+    /* 40px */
+    height: 1rem;
+    /* 16px */
+    position: relative;
+}
+
+.toggle-bg {
+    width: 100%;
+    height: 100%;
+    background-color: #d1d5db;
+    /* Tailwind gray-300 */
+    border-radius: 9999px;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-dot {
+    position: absolute;
+    top: -0.125rem;
+    left: -0.125rem;
+    width: 1.5rem;
+    /* 24px */
+    height: 1.5rem;
+    /* 24px */
+    background-color: white;
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+input:checked+.toggle-bg {
+    background-color: #2563eb;
+    /* Tailwind blue-600 */
+}
+
+input:checked+.toggle-bg+.toggle-dot {
+    transform: translateX(100%);
+}
+</style>
