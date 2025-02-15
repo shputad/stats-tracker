@@ -67,12 +67,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Tools
     Route::get('tools', [AdminToolsController::class, 'index'])->name('tools.index');
     Route::get('tools/command-builder', [AdminToolsController::class, 'commandBuilder'])->name('tools.commandbuilder.index');
+    Route::get('tools/lander-templates', [AdminToolsController::class, 'landerTemplates'])->name('tools.landertemplates.index');
     Route::get('tools/lander-builder', [AdminToolsController::class, 'landerBuilder'])->name('tools.landerbuilder.index');
 
     // Command Builder API
     Route::post('tools/command-builder/generate', [AdminToolsController::class, 'generateCommand'])->name('tools.commandbuilder.generate');
     Route::post('tools/command-builder/export', [AdminToolsController::class, 'exportCommand'])->name('tools.commandbuilder.export');
     Route::post('tools/command-builder/test', [AdminToolsController::class, 'testCommand'])->name('tools.commandbuilder.test');
+
+    // Lander Templates
+    Route::get('tools/lander-templates-json', [AdminToolsController::class, 'landerTemplatesJson'])->name('tools.landertemplates.json');
+    Route::post('tools/lander-templates', [AdminToolsController::class, 'storeLanderTemplate'])->name('tools.landertemplates.store');
+    Route::get('tools/lander-templates/preview', [AdminToolsController::class, 'previewLanderTemplate'])->name('tools.landertemplates.preview');
+    Route::delete('tools/lander-templates/{filename}', [AdminToolsController::class, 'deleteLanderTemplate'])->name('tools.landertemplates.destroy');
 
     // Sub-Routes
     Route::resource('links.stats', AdminLinkStatController::class);

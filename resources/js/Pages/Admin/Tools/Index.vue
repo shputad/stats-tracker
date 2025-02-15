@@ -34,6 +34,12 @@ const tools = ref([
         url: '/admin/tools/command-builder'
     },
     {
+        name: 'Lander Templates',
+        icon: 'far fa-file-lines',
+        description: 'Create and manage landing templates',
+        url: '/admin/tools/lander-templates'
+    },
+    {
         name: 'Lander Builder',
         icon: 'far fa-file-code',
         description: 'Create and manage landing pages',

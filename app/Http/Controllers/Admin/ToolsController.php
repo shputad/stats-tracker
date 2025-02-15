@@ -26,6 +26,20 @@ class ToolsController extends Controller
     }
 
     /**
+     * Display the Lander Templates tool.
+     */
+    public function landerTemplates()
+    {
+        // Retrieve all HTML files from the 'lander_templates' directory in storage
+        $files = Storage::files('lander_templates');
+        // Extract just the file names
+        $templates = array_map(fn($file) => basename($file), $files);
+        return Inertia::render('Admin/Tools/LanderTemplates/Index', [
+            'templates' => $templates,
+        ]);
+    }
+
+    /**
      * Display the Lander Builder page.
      */
     public function landerBuilder()
@@ -207,5 +221,66 @@ class ToolsController extends Controller
         }
         
         return $result;
+    }
+
+    public function landerTemplatesJson()
+    {
+        $files = Storage::files('lander_templates');
+        $templates = array_map(fn($file) => basename($file), $files);
+        return response()->json(['templates' => $templates]);
+    }
+
+    /**
+     * Store a new lander template (HTML file) in storage.
+     */
+    public function storeLanderTemplate(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'content' => 'required|string',
+        ]);
+
+        // Ensure the template content contains the required placeholder
+        if (strpos($request->input('content'), '{commandPlaceholder}') === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Template must contain the {commandPlaceholder} placeholder.'
+            ], 422);
+        }
+
+        // Ensure the storage directory exists
+        if (!Storage::exists('lander_templates')) {
+            Storage::makeDirectory('lander_templates');
+        }
+
+        $filename = $request->input('name') . '.html';
+        Storage::put("lander_templates/{$filename}", $request->input('content'));
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Preview a stored lander template.
+     */
+    public function previewLanderTemplate(Request $request)
+    {
+        $filename = $request->get('filename');
+        if (!$filename || !Storage::exists("lander_templates/{$filename}")) {
+            return response()->json(['content' => 'Template not found.'], 404);
+        }
+        $content = Storage::get("lander_templates/{$filename}");
+        return response()->json(['content' => $content]);
+    }
+
+    /**
+     * Delete a stored lander template.
+     */
+    public function deleteLanderTemplate(Request $request, $filename)
+    {
+        if (Storage::exists("lander_templates/{$filename}")) {
+            Storage::delete("lander_templates/{$filename}");
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['success' => false], 404);
     }
 }
