@@ -19,6 +19,7 @@
                         <tr>
                             <th class="border border-gray-300 p-2 text-left">Name</th>
                             <th class="border border-gray-300 p-2 text-left">URL</th>
+                            <th class="border border-gray-300 p-2 text-center">Type</th>
                             <th class="border border-gray-300 p-2 text-center">Status</th>
                             <th class="border border-gray-300 p-2 text-center">Actions</th>
                         </tr>
@@ -32,6 +33,9 @@
                                     style="max-width: 400px; white-space: break-spaces; text-overflow: ellipsis; word-break: break-word;">
                                     {{ link.url }}
                                 </a>
+                            </td>
+                            <td class="border border-gray-300 p-2 text-center">
+                                {{ link.type.charAt(0).toUpperCase() + link.type.slice(1) }}
                             </td>
                             <td class="border border-gray-300 p-2 text-center">
                                 <span :class="`px-2 py-1 rounded text-xs text-white font-bold ${link.status === 'active' ? 'bg-green-600' : 'bg-red-600'

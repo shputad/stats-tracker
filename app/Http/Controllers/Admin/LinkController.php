@@ -35,10 +35,11 @@ class LinkController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url',
+            'type'   => 'required|in:lumma,vidar',
             'status' => 'required|in:active,inactive',
         ]);
 
-        Link::create($request->only(['name', 'url', 'status']));
+        Link::create($request->only(['name', 'url', 'status', 'type']));
 
         return redirect()->route('admin.links.index');
     }
@@ -69,10 +70,11 @@ class LinkController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url',
+            'type'   => 'required|in:lumma,vidar',
             'status' => 'required|in:active,inactive',
         ]);
 
-        $link->update($request->only(['name', 'url', 'status']));
+        $link->update($request->only(['name', 'url', 'status', 'type']));
 
         return redirect()->route('admin.links.index');
     }

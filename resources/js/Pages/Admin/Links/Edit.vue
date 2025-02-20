@@ -26,6 +26,17 @@
                         {{ form.errors.url }}
                     </span>
                 </div>
+                <!-- Type Field -->
+                <div class="mb-4">
+                    <label for="type" class="block text-gray-700 font-medium">Type</label>
+                    <select v-model="form.type" id="type" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                        <option value="lumma">Lumma</option>
+                        <option value="vidar">Vidar</option>
+                    </select>
+                    <span v-if="form.errors.type" class="text-red-600 text-sm">
+                        {{ form.errors.type }}
+                    </span>
+                </div>
                 <!-- Status Field -->
                 <div class="mb-4">
                     <label for="status" class="block text-gray-700 font-medium">Status</label>
@@ -64,6 +75,7 @@ const link = props.link;
 const form = useForm({
     name: link.name,
     url: link.url,
+    type: link.type,
     status: link.status,
 });
 

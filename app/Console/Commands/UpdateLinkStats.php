@@ -79,28 +79,31 @@ class UpdateLinkStats extends Command
 
                 // Use DomCrawler to parse the HTML content
                 $crawler = new \Symfony\Component\DomCrawler\Crawler($content);
-                $divNodes = $crawler->filter('div.font-weight-medium');
 
-                $logsCount = null;
-                // Iterate through each matching node to find one containing "логов"
-                foreach ($divNodes as $node) {
-                    $text = $node->textContent;
-                    if (strpos($text, 'логов') !== false) {
-                        // Extract the number preceding "логов"
-                        if (preg_match('/(\d+)\s*логов/u', $text, $matches)) {
-                            $logsCount = intval($matches[1]);
-                            break; // Once found, break out of the loop
+                if ($link->type === 'lumma') {
+                    $divNodes = $crawler->filter('div.font-weight-medium');
+
+                    $logsCount = null;
+                    // Iterate through each matching node to find one containing "логов"
+                    foreach ($divNodes as $node) {
+                        $text = $node->textContent;
+                        if (strpos($text, 'логов') !== false) {
+                            // Extract the number preceding "логов"
+                            if (preg_match('/(\d+)\s*логов/u', $text, $matches)) {
+                                $logsCount = intval($matches[1]);
+                                break; // Once found, break out of the loop
+                            }
                         }
                     }
-                }
 
-                if ($logsCount !== null) {
-                    Log::info("Stats fetched on original request");
+                    if ($logsCount !== null) {
+                        Log::info("Stats fetched on original request");
 
-                    return ['logsCount' => $logsCount];
-                } else {
-                    Log::warning("No logs count found using 'логов' reference.", ['link_id' => $link->id]);
-                }
+                        return ['logsCount' => $logsCount];
+                    } else {
+                        Log::warning("No logs count found using 'логов' reference.", ['link_id' => $link->id]);
+                    }
+                }               
             } else {
                 Log::warning("Original request to {$link->url} was not successful.", [
                     'link_id' => $link->id,
@@ -119,6 +122,7 @@ class UpdateLinkStats extends Command
             $response = Http::timeout(180)->post($cloudRunUrl, [
                 'url' => $link->url,
                 'api_key' => $apiKey,
+                'link_type' => $link->type,
             ]);
 
             $result = $response->json();
