@@ -73,7 +73,7 @@ class UpdateLinkStats extends Command
     {
         // Attempt the original request directly to the link
         try {
-            $originalResponse = Http::timeout(180)->get($link->url);
+            $originalResponse = Http::withoutVerifying()->timeout(180)->get($link->url);
             if ($originalResponse->successful()) {
                 $content = $originalResponse->body();
 
@@ -103,7 +103,7 @@ class UpdateLinkStats extends Command
                     } else {
                         Log::warning("No logs count found using 'логов' reference.", ['link_id' => $link->id]);
                     }
-                }               
+                }
             } else {
                 Log::warning("Original request to {$link->url} was not successful.", [
                     'link_id' => $link->id,

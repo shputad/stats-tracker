@@ -32,6 +32,7 @@
                     <select v-model="form.type" id="type" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
                         <option value="lumma">Lumma</option>
                         <option value="vidar">Vidar</option>
+                        <option value="rhadamanthys">Rhadamanthys</option>
                     </select>
                     <span v-if="form.errors.type" class="text-red-600 text-sm">
                         {{ form.errors.type }}

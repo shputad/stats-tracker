@@ -35,7 +35,7 @@ class LinkController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url',
-            'type'   => 'required|in:lumma,vidar',
+            'type'   => 'required|in:lumma,vidar,rhadamanthys',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -70,7 +70,7 @@ class LinkController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'url' => 'required|url',
-            'type'   => 'required|in:lumma,vidar',
+            'type'   => 'required|in:lumma,vidar,rhadamanthys',
             'status' => 'required|in:active,inactive',
         ]);
 
