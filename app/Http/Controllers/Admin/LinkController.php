@@ -15,7 +15,7 @@ class LinkController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Links/Index', [
-            'links' => Link::get(),
+            'links' => Link::orderBy('created_at', 'desc')->get(),
         ]);
     }
 
