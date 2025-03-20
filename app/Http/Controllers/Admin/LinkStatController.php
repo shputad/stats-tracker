@@ -27,17 +27,19 @@ class LinkStatController extends Controller
             ->withQueryString();
 
         $statsWithDifferences = $statsPaginator->getCollection()->map(function ($stat, $index) use ($link, $statsPaginator) {
+            $baseLogsType = $link->base_logs_type ?: 'log';
+
             // Get the log value from the oldest record available in the last 10 minutes
             $logsBefore10Minutes = $link->linkStats()
                 ->whereBetween('created_at', [$stat->created_at->copy()->subMinutes(10)->startOfMinute(), $stat->created_at->copy()->startOfMinute()])
                 ->orderBy('created_at', 'asc')
-                ->value('log') ?? 0;
+                ->value($baseLogsType) ?? 0;
 
             // Get the log value from the oldest record available in the last hour
             $logsBeforeHour = $link->linkStats()
                 ->whereBetween('created_at', [$stat->created_at->copy()->subMinutes(60)->startOfMinute(), $stat->created_at->copy()->startOfMinute()])
                 ->orderBy('created_at', 'asc')
-                ->value('log') ?? 0;
+                ->value($baseLogsType) ?? 0;
 
             // Check if the current stat is the first stat of the hour
             $isFirstStatOfHour = !$link->linkStats()
@@ -52,7 +54,7 @@ class LinkStatController extends Controller
             $logsBeforeToday = $link->linkStats()
                 ->whereDate('created_at', $stat->created_at->toDateString())
                 ->orderBy('created_at', 'asc')
-                ->value('log') ?? 0;
+                ->value($baseLogsType) ?? 0;
 
             // For the first record, ensure differences are zero
             if ($index === ($statsPaginator->getCollection()->count() - 1)) {
@@ -62,11 +64,11 @@ class LinkStatController extends Controller
 
             return [
                 'id' => $stat->id,
-                'log' => $stat->log,
+                'log' => $stat->$baseLogsType,
                 'created_at' => $stat->created_at,
-                'last_10_minutes_diff' => $stat->log - $logsBefore10Minutes,
-                'last_hour_diff' => $isFirstStatOfHour ? ($logsBeforeHour !== null ? $stat->log - $logsBeforeHour : null) : null,
-                'today_diff' => $stat->log - $logsBeforeToday,
+                'last_10_minutes_diff' => $stat->$baseLogsType - $logsBefore10Minutes,
+                'last_hour_diff' => $isFirstStatOfHour ? ($logsBeforeHour !== null ? $stat->$baseLogsType - $logsBeforeHour : null) : null,
+                'today_diff' => $stat->$baseLogsType - $logsBeforeToday,
             ];
         });
 
@@ -96,7 +98,8 @@ class LinkStatController extends Controller
     {
         $request->validate([
             'link_id' => 'required|exists:links,id',
-            'log' => 'required|integer|min:0'
+            'log' => 'required|integer|min:0',
+            'detailed_log' => 'nullable|integer|min:0'
         ]);
 
         LinkStat::create($request->all());
@@ -130,7 +133,8 @@ class LinkStatController extends Controller
     {
         $request->validate([
             'link_id' => 'required|exists:links,id',
-            'log' => 'required|integer|min:0'
+            'log' => 'required|integer|min:0',
+            'detailed_log' => 'nullable|integer|min:0'
         ]);
 
         $stat->update($request->all());

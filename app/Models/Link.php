@@ -10,7 +10,7 @@ class Link extends Model
     /** @use HasFactory<\Database\Factories\LinkFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'url', 'type', 'status'];
+    protected $fillable = ['name', 'build_tag', 'url', 'type', 'status', 'api_url', 'base_logs_type'];
 
     public function linkStats()
     {

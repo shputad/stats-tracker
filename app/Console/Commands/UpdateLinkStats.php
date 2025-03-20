@@ -46,13 +46,18 @@ class UpdateLinkStats extends Command
                 $result = $this->fetchLogValue($cloudRunUrl, $link, $apiKey);
 
                 if ($result && isset($result['logsCount'])) {
+                    if (!isset($result['detailedLogsCount'])) {
+                        $result['detailedLogsCount'] = null;
+                    }
+
                     // Save the logs in the LinkStat table
                     LinkStat::create([
                         'link_id' => $link->id,
                         'log' => $result['logsCount'],
+                        'detailed_log' => $result['detailedLogsCount'],
                     ]);
 
-                    $this->info("Updated stats for link ID: {$link->id} - Logs: {$result['logsCount']}");
+                    $this->info("Updated stats for link ID: {$link->id} - Logs: {$result['logsCount']}, Detailed Logs: {$result['detailedLogsCount']}");
                 }
             } catch (\Exception $e) {
                 $this->error("Error updating link ID: {$link->id} - " . $e->getMessage());
@@ -102,6 +107,69 @@ class UpdateLinkStats extends Command
                         return ['logsCount' => $logsCount];
                     } else {
                         Log::warning("No logs count found using 'логов' reference.", ['link_id' => $link->id]);
+                    }
+                } elseif ($link->type === 'rhadamanthys') {
+                    $apiUrl = $link->api_url;
+                    $buildTag = $link->build_tag;
+                    $logsCount = [];
+
+                    try {
+                        $response = Http::withoutVerifying()->timeout(180)->post($apiUrl . '/getDashboardInformation', [
+                            'buildtag' => $buildTag,
+                            'dup' => true,
+                            'gdup' => true,
+                        ]);
+            
+                        $result = $response->json();
+            
+                        if ($response->successful()) {
+                            $logsCount['logsCount'] = $result['result']['total_pkgs'] ?? null;
+                        }
+            
+                        Log::error('API Url request for general stats failed', [
+                            'link_id' => $link->id,
+                            'api_url' => $apiUrl . '/getDashboardInformation',
+                            'status' => $response->status(),
+                            'response' => $result
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Error calling API Url for general stats', [
+                            'link_id' => $link->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
+                    try {
+                        $response = Http::withoutVerifying()->timeout(180)->post($apiUrl . '/packageQuery', [
+                            'opts' => [
+                                'current' => 1,
+                            ],
+                            'buildtag' => $buildTag,
+                            'dup' => true,
+                            'gdup' => true,
+                        ]);
+            
+                        $result = $response->json();
+            
+                        if ($response->successful()) {
+                            $logsCount['detailedLogsCount'] = $result['result']['total_pkgs'] ?? null;
+                        }
+            
+                        Log::error('API Url request for detailed stats failed', [
+                            'link_id' => $link->id,
+                            'api_url' => $apiUrl . '/packageQuery',
+                            'status' => $response->status(),
+                            'response' => $result
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Error calling API Url for detailed stats', [
+                            'link_id' => $link->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
+                    if (!empty($logsCount)) {
+                        return $logsCount;
                     }
                 }
             } else {

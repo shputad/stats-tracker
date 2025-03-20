@@ -34,12 +34,15 @@ class LinkController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'build_tag' => 'required|string|max:255',
             'url' => 'required|url',
-            'type'   => 'required|in:lumma,vidar,rhadamanthys',
+            'type' => 'required|in:lumma,vidar,rhadamanthys',
             'status' => 'required|in:active,inactive',
+            'api_url' => 'nullable|url',
+            'base_logs_type' => 'nullable|in:log,detailed_log',
         ]);
 
-        Link::create($request->only(['name', 'url', 'status', 'type']));
+        Link::create($request->only(['name', 'build_tag', 'url', 'type', 'status', 'api_url', 'base_logs_type']));
 
         return redirect()->route('admin.links.index');
     }
@@ -69,12 +72,15 @@ class LinkController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'build_tag' => 'required|string|max:255',
             'url' => 'required|url',
-            'type'   => 'required|in:lumma,vidar,rhadamanthys',
+            'type' => 'required|in:lumma,vidar,rhadamanthys',
             'status' => 'required|in:active,inactive',
+            'api_url' => 'nullable|url',
+            'base_logs_type' => 'nullable|in:log,detailed_log',
         ]);
 
-        $link->update($request->only(['name', 'url', 'status', 'type']));
+        $link->update($request->only(['name', 'build_tag', 'url', 'type', 'status', 'api_url', 'base_logs_type']));
 
         return redirect()->route('admin.links.index');
     }

@@ -10,7 +10,7 @@ class LinkStat extends Model
     /** @use HasFactory<\Database\Factories\LinkStatFactory> */
     use HasFactory;
 
-    protected $fillable = ['link_id', 'log'];
+    protected $fillable = ['link_id', 'log', 'detailed_log'];
 
     public function link()
     {
