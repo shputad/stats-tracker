@@ -124,14 +124,14 @@ class UpdateLinkStats extends Command
             
                         if ($response->successful()) {
                             $logsCount['logsCount'] = $result['result']['total_pkgs'] ?? null;
+                        } else {
+                            Log::error('API Url request for general stats failed', [
+                                'link_id' => $link->id,
+                                'api_url' => $apiUrl . '/getDashboardInformation',
+                                'status' => $response->status(),
+                                'response' => $result
+                            ]);
                         }
-            
-                        Log::error('API Url request for general stats failed', [
-                            'link_id' => $link->id,
-                            'api_url' => $apiUrl . '/getDashboardInformation',
-                            'status' => $response->status(),
-                            'response' => $result
-                        ]);
                     } catch (\Exception $e) {
                         Log::error('Error calling API Url for general stats', [
                             'link_id' => $link->id,
@@ -153,14 +153,14 @@ class UpdateLinkStats extends Command
             
                         if ($response->successful()) {
                             $logsCount['detailedLogsCount'] = $result['result']['total_pkgs'] ?? null;
+                        } else {
+                            Log::error('API Url request for detailed stats failed', [
+                                'link_id' => $link->id,
+                                'api_url' => $apiUrl . '/packageQuery',
+                                'status' => $response->status(),
+                                'response' => $result
+                            ]);
                         }
-            
-                        Log::error('API Url request for detailed stats failed', [
-                            'link_id' => $link->id,
-                            'api_url' => $apiUrl . '/packageQuery',
-                            'status' => $response->status(),
-                            'response' => $result
-                        ]);
                     } catch (\Exception $e) {
                         Log::error('Error calling API Url for detailed stats', [
                             'link_id' => $link->id,
