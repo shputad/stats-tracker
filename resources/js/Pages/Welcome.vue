@@ -16,7 +16,7 @@
                 </template>
                 <template v-else>
                     <Link href="/dashboard"
-                        class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition">
+                        class="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-500 transition">
                     Go to Dashboard
                     </Link>
                 </template>
