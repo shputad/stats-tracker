@@ -7,11 +7,19 @@
         <header class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center shadow">
             <h1 class="text-xl font-bold text-orange-400">Stats Tracker</h1>
             <div>
-                <Link href="/login" class="text-white hover:text-orange-300 transition px-4">Login</Link>
-                <Link href="/register"
-                    class="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition ml-2">
-                Get Started
-                </Link>
+                <template v-if="!authUser">
+                    <Link href="/login" class="text-white hover:text-orange-300 transition px-4">Login</Link>
+                    <Link href="/register"
+                        class="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition ml-2">
+                    Get Started
+                    </Link>
+                </template>
+                <template v-else>
+                    <Link href="/dashboard"
+                        class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition">
+                    Go to Dashboard
+                    </Link>
+                </template>
             </div>
         </header>
 
@@ -59,5 +67,7 @@
 </template>
 
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+
+const authUser = usePage().props.auth?.user || null;
 </script>
