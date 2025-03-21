@@ -1,61 +1,51 @@
+<template>
+
+    <Head title="Email Verification" />
+
+    <div class="min-h-screen flex flex-col justify-center items-center bg-gray-100 px-4">
+        <div class="w-full max-w-md bg-white p-6 rounded-lg shadow">
+            <h1 class="text-xl font-bold mb-4 text-center text-gray-800">Verify Your Email</h1>
+
+            <p class="text-gray-700 text-sm mb-6 text-center">
+                Thanks for signing up! Before getting started, please verify your email address by clicking the link we
+                just emailed to you. If you didn’t receive the email, we’ll gladly send you another.
+            </p>
+
+            <div class="flex flex-col gap-4">
+                <button @click="resendVerification"
+                    class="w-full bg-blue-600 hover:bg-blue-700 transition text-white font-semibold py-2 px-4 rounded-md"
+                    :disabled="loading" :class="{ 'opacity-50': loading }">
+                    Resend Verification Email
+                </button>
+
+                <button @click="logout"
+                    class="w-full bg-gray-600 hover:bg-gray-700 transition text-white font-semibold py-2 px-4 rounded-md">
+                    Log Out
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
 <script setup>
-import { computed } from 'vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { useToast } from 'vue-toastification';
 
-const props = defineProps({
-    status: {
-        type: String,
-    },
-});
+const toast = useToast();
+const loading = ref(false);
 
-const form = useForm({});
+const resendVerification = () => {
+    loading.value = true;
 
-const submit = () => {
-    form.post(route('verification.send'));
+    router.post(route('verification.send'), {}, {
+        onSuccess: () => toast.success('Verification email sent successfully!'),
+        onError: () => toast.error('Could not send verification email.'),
+        onFinish: () => loading.value = false,
+    });
 };
 
-const verificationLinkSent = computed(
-    () => props.status === 'verification-link-sent',
-);
+const logout = () => {
+    router.post(route('logout'));
+};
 </script>
-
-<template>
-    <GuestLayout>
-        <Head title="Email Verification" />
-
-        <div class="mb-4 text-sm text-gray-600">
-            Thanks for signing up! Before getting started, could you verify your
-            email address by clicking on the link we just emailed to you? If you
-            didn't receive the email, we will gladly send you another.
-        </div>
-
-        <div
-            class="mb-4 text-sm font-medium text-green-600"
-            v-if="verificationLinkSent"
-        >
-            A new verification link has been sent to the email address you
-            provided during registration.
-        </div>
-
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Resend Verification Email
-                </PrimaryButton>
-
-                <Link
-                    :href="route('logout')"
-                    method="post"
-                    as="button"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Log Out</Link
-                >
-            </div>
-        </form>
-    </GuestLayout>
-</template>
