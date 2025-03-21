@@ -3,59 +3,67 @@
 
     <AdminLayout>
         <div class="mx-auto">
-            <!-- Responsive Header -->
+            <!-- Header -->
             <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold mb-4 sm:mb-0">Links</h1>
+                <h1 class="text-2xl font-bold mb-4 sm:mb-0 text-gray-800">Manage Links</h1>
                 <Link :href="route('admin.links.create')"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Create Link
+                      class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md shadow hover:bg-blue-700 transition">
+                    + Create Link
                 </Link>
             </div>
 
-            <!-- Table Container for Responsive Scrolling -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full border-collapse border border-gray-200">
-                    <thead class="bg-gray-100">
+            <!-- Table -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
                         <tr>
-                            <th class="border border-gray-300 p-2 text-left">Name</th>
-                            <th class="border border-gray-300 p-2 text-left">URL</th>
-                            <th class="border border-gray-300 p-2 text-center">Type</th>
-                            <th class="border border-gray-300 p-2 text-center">Status</th>
-                            <th class="border border-gray-300 p-2 text-center">Actions</th>
+                            <th class="p-3 text-left">Name</th>
+                            <th class="p-3 text-left">URL</th>
+                            <th class="p-3 text-center">Type</th>
+                            <th class="p-3 text-center">Status</th>
+                            <th class="p-3 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="link in links" :key="link.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 p-2">{{ link.name }}</td>
-                            <td class="border border-gray-300 p-2">
-                                <a :href="link.url" target="_blank" class="text-blue-600 underline truncate block"
-                                    :title="link.url"
-                                    style="max-width: 400px; white-space: break-spaces; text-overflow: ellipsis; word-break: break-word;">
-                                    {{ link.url }}
+                        <tr v-for="link in links" :key="link.id" class="border-t hover:bg-gray-50 transition">
+                            <td class="p-3 font-medium text-gray-800">{{ link.name }}</td>
+                            <td class="p-3">
+                                <a :href="link.url" target="_blank"
+                                   class="text-blue-600 hover:underline break-words block max-w-[400px] truncate"
+                                   :title="link.url">
+                                   {{ link.url }}
                                 </a>
                             </td>
-                            <td class="border border-gray-300 p-2 text-center">
-                                {{ link.type.charAt(0).toUpperCase() + link.type.slice(1) }}
-                            </td>
-                            <td class="border border-gray-300 p-2 text-center">
-                                <span :class="`px-2 py-1 rounded text-xs text-white font-bold ${link.status === 'active' ? 'bg-green-600' : 'bg-red-600'
-                                    }`">
-                                    {{ String(link.status).charAt(0).toUpperCase() + String(link.status).slice(1) }}
+                            <td class="p-3 text-center">
+                                <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded">
+                                    {{ link.type.charAt(0).toUpperCase() + link.type.slice(1) }}
                                 </span>
                             </td>
-                            <td class="border border-gray-300 p-2 text-center">
+                            <td class="p-3 text-center">
+                                <span :class="[
+                                    'px-2 py-1 rounded text-xs font-bold',
+                                    link.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                ]">
+                                    {{ link.status.charAt(0).toUpperCase() + link.status.slice(1) }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-center flex justify-center space-x-3">
                                 <Link :href="route('admin.links.stats.index', link.id)"
-                                    class="text-purple-600 hover:underline">
-                                <i class="fas fa-chart-simple text-sm"></i>
+                                      class="text-purple-600 hover:text-purple-800" title="View Stats">
+                                    <i class="fas fa-chart-simple"></i>
                                 </Link>
                                 <Link :href="route('admin.links.edit', link.id)"
-                                    class="text-blue-600 hover:underline ml-2">
-                                <i class="fas fa-pencil text-sm"></i>
+                                      class="text-blue-600 hover:text-blue-800" title="Edit">
+                                    <i class="fas fa-pencil-alt"></i>
                                 </Link>
-                                <button @click="deleteLink(link.id)" class="text-red-600 hover:underline ml-2">
-                                    <i class="fas fa-trash text-sm"></i>
+                                <button @click="deleteLink(link.id)"
+                                        class="text-red-600 hover:text-red-800" title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </td>
+                        </tr>
+                        <tr v-if="links.length === 0">
+                            <td colspan="5" class="p-4 text-center text-gray-500">No links found.</td>
                         </tr>
                     </tbody>
                 </table>

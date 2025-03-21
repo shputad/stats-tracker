@@ -1,28 +1,17 @@
 <template>
-    <Head title="Edit Network Profile" />
+    <Head title="Create Network Profile" />
 
-    <AdminLayout>
+    <AuthenticatedLayout>
         <div class="mx-auto max-w-3xl">
             <!-- Page Heading -->
             <h1 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <GoBack :href="route('admin.network-profiles.index')" class="mr-2" />
-                Edit Network Profile
+                <GoBack :href="route('user.network-profiles.index')" class="mr-2" />
+                Create Network Profile
             </h1>
 
             <!-- Form Card -->
             <form @submit.prevent="submit" class="bg-white p-6 shadow-lg rounded-lg">
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Profile Details</h2>
-
-                <!-- User -->
-                <div class="mb-4">
-                    <label for="user_id" class="block text-sm font-medium text-gray-700">User</label>
-                    <select v-model="form.user_id" id="user_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option disabled value="">Select User</option>
-                        <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
-                    </select>
-                    <p v-if="form.errors.user_id" class="text-red-600 text-sm mt-1">{{ form.errors.user_id }}</p>
-                </div>
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Profile Information</h2>
 
                 <!-- Network Channel -->
                 <div class="mb-4">
@@ -33,17 +22,6 @@
                         <option v-for="channel in channels" :key="channel.id" :value="channel.id">{{ channel.name }}</option>
                     </select>
                     <p v-if="form.errors.channel_id" class="text-red-600 text-sm mt-1">{{ form.errors.channel_id }}</p>
-                </div>
-
-                <!-- Link -->
-                <div class="mb-4">
-                    <label for="link_id" class="block text-sm font-medium text-gray-700">Link</label>
-                    <select v-model="form.link_id" id="link_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option disabled value="">Select Link</option>
-                        <option v-for="link in links" :key="link.id" :value="link.id">{{ link.name }}</option>
-                    </select>
-                    <p v-if="form.errors.link_id" class="text-red-600 text-sm mt-1">{{ form.errors.link_id }}</p>
                 </div>
 
                 <!-- Account ID -->
@@ -74,47 +52,41 @@
                     <p v-if="form.errors.status" class="text-red-600 text-sm mt-1">{{ form.errors.status }}</p>
                 </div>
 
-                <!-- Action Buttons -->
+                <!-- Actions -->
                 <div class="flex flex-col sm:flex-row gap-4 pt-2">
                     <button
                         type="submit"
                         class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 transition"
                     >
-                        Save Changes
+                        Create
                     </button>
                     <Link
-                        :href="route('admin.network-profiles.index')"
-                        class="px-4 py-2 bg-gray-600 text-white text-sm font-semibold rounded-md hover:bg-gray-700 transition text-center"
+                        :href="route('user.network-profiles.index')"
+                        class="px-4 py-2 bg-gray-500 text-white text-sm font-semibold rounded-md hover:bg-gray-600 transition text-center"
                     >
                         Cancel
                     </Link>
                 </div>
             </form>
         </div>
-    </AdminLayout>
+    </AuthenticatedLayout>
 </template>
 
 <script setup>
 import GoBack from '@/Components/GoBack.vue';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Head, useForm, usePage, Link } from '@inertiajs/vue3';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head, useForm, Link } from '@inertiajs/vue3';
 
-const { props } = usePage();
-const profile = props.profile;
-const users = props.users;
-const channels = props.channels;
-const links = props.links;
+defineProps({ channels: Array, links: Array });
 
 const form = useForm({
-    user_id: profile.user_id,
-    channel_id: profile.channel_id,
-    link_id: profile.link_id,
-    account_id: profile.account_id,
-    api_key: profile.api_key,
-    status: profile.status,
+    channel_id: '',
+    account_id: '',
+    api_key: '',
+    status: '',
 });
 
 const submit = () => {
-    form.put(route('admin.network-profiles.update', profile.id));
+    form.post(route('user.network-profiles.store'));
 };
 </script>

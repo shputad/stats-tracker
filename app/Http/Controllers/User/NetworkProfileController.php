@@ -8,9 +8,12 @@ use App\Models\NetworkProfile;
 use App\Models\Link;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class NetworkProfileController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Display a listing of the resource.
      */
@@ -39,15 +42,18 @@ class NetworkProfileController extends Controller
     {
         $request->validate([
             'channel_id' => 'required|exists:network_channels,id',
-            'link_id' => 'required|exists:links,id',
             'account_id' => 'required|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'status' => 'required|in:active,inactive',
         ]);
 
         NetworkProfile::create([
             'user_id' => auth()->id(),
             'channel_id' => $request->channel_id,
-            'link_id' => $request->link_id,
+            'link_id' => null,
             'account_id' => $request->account_id,
+            'api_key' => $request->api_key,
+            'status' => $request->status,
         ]);
 
         return redirect()->route('user.network-profiles.index');
@@ -64,31 +70,31 @@ class NetworkProfileController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(NetworkProfile $profile)
+    public function edit(NetworkProfile $networkProfile)
     {
-        $this->authorize('update', $profile);
+        $this->authorize('update', $networkProfile);
 
         return Inertia::render('User/NetworkProfiles/Edit', [
-            'profile' => $profile,
+            'profile' => $networkProfile,
             'channels' => NetworkChannel::all(),
-            'links' => Link::all(),
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, NetworkProfile $profile)
+    public function update(Request $request, NetworkProfile $networkProfile)
     {
-        $this->authorize('update', $profile);
+        $this->authorize('update', $networkProfile);
 
         $request->validate([
             'channel_id' => 'required|exists:network_channels,id',
-            'link_id' => 'required|exists:links,id',
             'account_id' => 'required|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'status' => 'required|in:active,inactive',
         ]);
 
-        $profile->update($request->only('channel_id', 'link_id', 'account_id'));
+        $networkProfile->update($request->only('channel_id', 'account_id', 'api_key', 'status'));
 
         return redirect()->route('user.network-profiles.index');
     }
@@ -96,11 +102,11 @@ class NetworkProfileController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(NetworkProfile $profile)
+    public function destroy(NetworkProfile $networkProfile)
     {
-        $this->authorize('delete', $profile);
+        $this->authorize('delete', $networkProfile);
 
-        $profile->delete();
+        $networkProfile->delete();
 
         return redirect()->route('user.network-profiles.index');
     }

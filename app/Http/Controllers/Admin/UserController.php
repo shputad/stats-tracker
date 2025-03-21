@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class UserController extends Controller
@@ -98,7 +99,34 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        if (Auth::id() === $user->id) {
+            return redirect()->route('admin.users.index')->with('error', 'You cannot delete yourself.');
+        }
+
         $user->delete();
+
+        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
+    }
+
+    public function impersonate(User $user)
+    {
+        if (Auth::user()->hasRole('admin')) {
+            session(['impersonate' => Auth::id()]);
+            Auth::login($user);
+        }
+
+        return redirect()->route('dashboard');
+    }
+
+    public function leaveImpersonation()
+    {
+        if (session()->has('impersonate')) {
+            $adminId = session()->pull('impersonate');
+            Auth::loginUsingId($adminId);
+            session()->forget('impersonate');
+
+            return redirect()->route('admin.users.index')->with('success', 'Impersonation ended.');
+        }
 
         return redirect()->route('admin.users.index');
     }

@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\NetworkProfileStatController as AdminNetworkProfi
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\ToolsController as AdminToolsController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\User\LinkController as UserLinkController;
 use App\Http\Controllers\User\LinkStatController as UserLinkStatController;
 use App\Http\Controllers\User\NetworkProfileController as UserNetworkProfileController;
 use App\Http\Controllers\User\NetworkProfileStatController as UserNetworkProfileStatController;
@@ -41,12 +43,6 @@ Route::get('/dashboard', function () {
     abort(403, 'Unauthorized');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // CRUD for Network Channels
     Route::resource('network-channels', AdminNetworkChannelController::class);
@@ -59,6 +55,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // CRUD for Users
     Route::resource('users', AdminUserController::class);
+
+    Route::post('/impersonate/{user}', [AdminUserController::class, 'impersonate'])->name('users.impersonate');
+    Route::post('/impersonate-leave', [AdminUserController::class, 'leaveImpersonation'])->name('users.leave-impersonation');
 
     // Settings
     Route::get('settings', [AdminSettingController::class, 'index'])->name('settings.index');
@@ -84,15 +83,30 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Sub-Routes
     Route::resource('links.stats', AdminLinkStatController::class);
     Route::resource('network-profiles/{profile}/stats', AdminNetworkProfileStatController::class);
+
+    // Profile
+    Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [AdminProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
+Route::middleware(['auth', 'role:user'])->name('user.')->group(function () {
     // CRUD for Network Profiles
     Route::resource('network-profiles', UserNetworkProfileController::class)->except(['show']);
 
+    // Links
+    Route::resource('links', UserLinkController::class)->only(['index', 'show']);
+
     // Sub-Routes
-    Route::resource('links/{link}/stats', UserLinkStatController::class)->only(['index', 'show']);
+    Route::resource('links.stats', UserLinkStatController::class)->only(['index', 'show']);
     Route::resource('network-profiles/{profile}/stats', UserNetworkProfileStatController::class);
+
+    Route::post('/impersonate-leave', [UserController::class, 'leaveImpersonation'])->name('leave-impersonation');
+
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 

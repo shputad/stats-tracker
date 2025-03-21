@@ -4,56 +4,69 @@
     <AdminLayout>
         <div class="mx-auto">
             <!-- Dashboard Title -->
-            <h1 class="text-2xl font-bold mb-6">Admin Dashboard</h1>
+            <h1 class="text-2xl font-bold mb-6">Welcome to Admin Dashboard</h1>
 
-            <!-- Metrics Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-white p-4 shadow rounded">
-                    <h3 class="text-lg font-semibold">Network Channels</h3>
-                    <p class="text-2xl font-bold">{{ channelsCount }}</p>
+            <!-- Grid Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Network Channels -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-2">Network Channels</h2>
+                    <p class="text-3xl font-bold text-blue-600">{{ channelsCount }}</p>
+                    <p class="text-gray-600 text-sm mt-1">Channels configured in system</p>
                 </div>
-                <div class="bg-white p-4 shadow rounded">
-                    <h3 class="text-lg font-semibold">Links</h3>
-                    <p class="text-2xl font-bold">{{ linksCount }}</p>
+
+                <!-- Links -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-2">Links</h2>
+                    <p class="text-3xl font-bold text-green-600">{{ linksCount }}</p>
+                    <p class="text-gray-600 text-sm mt-1">Available tracked links</p>
                 </div>
-                <div class="bg-white p-4 shadow rounded">
-                    <h3 class="text-lg font-semibold">Network Profiles</h3>
-                    <p class="text-2xl font-bold">{{ profilesCount }}</p>
+
+                <!-- Network Profiles -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-2">Network Profiles</h2>
+                    <p class="text-3xl font-bold text-yellow-600">{{ profilesCount }}</p>
+                    <p class="text-gray-600 text-sm mt-1">User network profiles</p>
                 </div>
-                <div class="bg-white p-4 shadow rounded">
-                    <h3 class="text-lg font-semibold">Users</h3>
-                    <p class="text-2xl font-bold">{{ usersCount }}</p>
+
+                <!-- Users -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-2">Users</h2>
+                    <p class="text-3xl font-bold text-purple-600">{{ usersCount }}</p>
+                    <p class="text-gray-600 text-sm mt-1">Registered users</p>
                 </div>
             </div>
 
             <!-- Recent Links Table -->
-            <div class="mt-6">
-                <h2 class="text-xl font-bold mb-4">Recent Links</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full border-collapse border border-gray-200">
+            <div class="mt-10">
+                <h2 class="text-xl font-semibold mb-4">Recent Links</h2>
+                <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    <table class="min-w-full">
                         <thead class="bg-gray-100">
                             <tr>
-                                <th class="border border-gray-300 p-2 text-left">Name</th>
-                                <th class="border border-gray-300 p-2 text-left">URL</th>
-                                <th class="border border-gray-300 p-2 text-center">Status</th>
+                                <th class="text-left p-3 border-b">Name</th>
+                                <th class="text-left p-3 border-b">URL</th>
+                                <th class="text-center p-3 border-b">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="link in recentLinks" :key="link.id" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 p-2">{{ link.name }}</td>
-                                <td class="border border-gray-300 p-2">
+                                <td class="p-3 border-b">{{ link.name }}</td>
+                                <td class="p-3 border-b">
                                     <a :href="link.url" target="_blank" class="text-blue-600 underline truncate block"
                                         :title="link.url"
                                         style="max-width: 400px; white-space: break-spaces; text-overflow: ellipsis; word-break: break-word;">
                                         {{ link.url }}
                                     </a>
                                 </td>
-                                <td class="border border-gray-300 p-2 text-center">
-                                    <span
-                                        :class="`px-2 py-1 rounded text-xs text-white font-bold ${link.status === 'active' ? 'bg-green-600' : 'bg-red-600'}`">
+                                <td class="p-3 border-b text-center">
+                                    <span :class="`px-2 py-1 rounded text-xs text-white font-bold ${link.status === 'active' ? 'bg-green-600' : 'bg-red-600'}`">
                                         {{ String(link.status).charAt(0).toUpperCase() + String(link.status).slice(1) }}
                                     </span>
                                 </td>
+                            </tr>
+                            <tr v-if="recentLinks.length === 0">
+                                <td colspan="3" class="p-4 text-center text-gray-500">No recent links found.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -61,30 +74,31 @@
             </div>
 
             <!-- Recent Profiles Table -->
-            <div class="mt-6">
-                <h2 class="text-xl font-bold mb-4">Recent Profiles</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full border-collapse border border-gray-200">
+            <div class="mt-10">
+                <h2 class="text-xl font-semibold mb-4">Recent Profiles</h2>
+                <div class="overflow-x-auto bg-white rounded-lg shadow">
+                    <table class="min-w-full">
                         <thead class="bg-gray-100">
                             <tr>
-                                <th class="border border-gray-300 p-2 text-left">Channel</th>
-                                <th class="border border-gray-300 p-2 text-left">Account ID</th>
-                                <th class="border border-gray-300 p-2 text-left">Link</th>
-                                <th class="border border-gray-300 p-2 text-center">Status</th>
+                                <th class="text-left p-3 border-b">Channel</th>
+                                <th class="text-left p-3 border-b">Account ID</th>
+                                <th class="text-left p-3 border-b">Link</th>
+                                <th class="text-center p-3 border-b">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="profile in recentProfiles" :key="profile.id" class="hover:bg-gray-50">
-                                <td class="border border-gray-300 p-2">{{ profile.network_channel.name }}</td>
-                                <td class="border border-gray-300 p-2">{{ profile.account_id }}</td>
-                                <td class="border border-gray-300 p-2">{{ profile.link.name }}</td>
-                                <td class="border border-gray-300 p-2 text-center">
-                                    <span
-                                        :class="`px-2 py-1 rounded text-xs text-white font-bold ${profile.status === 'active' ? 'bg-green-600' : 'bg-red-600'}`">
-                                        {{ String(profile.status).charAt(0).toUpperCase() + String(profile.status).slice(1)
-                                        }}
+                                <td class="p-3 border-b">{{ profile.network_channel.name }}</td>
+                                <td class="p-3 border-b">{{ profile.account_id }}</td>
+                                <td class="p-3 border-b">{{ profile.link?.name ?? '—' }}</td>
+                                <td class="p-3 border-b text-center">
+                                    <span :class="`px-2 py-1 rounded text-xs text-white font-bold ${profile.status === 'active' ? 'bg-green-600' : 'bg-red-600'}`">
+                                        {{ String(profile.status).charAt(0).toUpperCase() + String(profile.status).slice(1) }}
                                     </span>
                                 </td>
+                            </tr>
+                            <tr v-if="recentProfiles.length === 0">
+                                <td colspan="4" class="p-4 text-center text-gray-500">No recent profiles found.</td>
                             </tr>
                         </tbody>
                     </table>

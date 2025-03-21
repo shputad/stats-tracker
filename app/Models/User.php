@@ -90,4 +90,14 @@ class User extends Authenticatable
 
         $this->roles()->sync($roleInstances->pluck('id')->toArray());
     }
+
+    public function networkProfiles()
+    {
+        return $this->hasMany(NetworkProfile::class);
+    }
+
+    public function isImpersonating()
+    {
+        return session()->has('impersonate');
+    }
 }

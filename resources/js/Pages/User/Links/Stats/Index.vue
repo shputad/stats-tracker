@@ -1,24 +1,21 @@
 <template>
     <Head title="Link Stats" />
 
-    <AdminLayout>
+    <AuthenticatedLayout>
         <div class="mx-auto">
 
-            <!-- Header with GoBack and Actions -->
+            <!-- Header with Auto Refresh -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800">
-                        <GoBack :href="`/admin/links`" /> Stats for "{{ link.name }}"
+                        <GoBack :href="`/links`" /> Stats for "{{ link.name }}"
                     </h1>
                     <p v-if="remainingTime > 0" class="text-sm text-gray-500 mt-1">
                         Next auto-refresh in: <span class="font-semibold">{{ formattedRemainingTime }}</span>
                     </p>
                 </div>
+
                 <div class="flex items-center space-x-3 mt-4 sm:mt-0">
-                    <Link :href="route('admin.links.stats.create', link.id)"
-                        class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md shadow hover:bg-blue-700 transition">
-                        + Create Stats
-                    </Link>
                     <button @click="refreshStats"
                         class="px-4 py-2 bg-green-600 text-white text-sm rounded-md shadow hover:bg-green-700 transition"
                         title="Refresh Table">
@@ -37,14 +34,15 @@
                 </div>
             </div>
 
-            <!-- No stats fallback -->
+            <!-- No Stats Message -->
             <div v-if="Object.keys(groupedStats).length === 0" class="text-center text-gray-500 py-12">
                 No stats found for this link.
             </div>
 
-            <!-- Grouped Stats by Date -->
+            <!-- Grouped Stats -->
             <div v-for="(statsGroup, date) in groupedStats" :key="date" class="mb-10">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ date }}</h2>
+
                 <div class="overflow-x-auto bg-white shadow rounded-lg">
                     <table class="min-w-full text-sm">
                         <thead class="bg-gray-100 text-xs uppercase text-gray-600">
@@ -54,12 +52,10 @@
                                 <th class="p-3 text-left">Last 10 mins</th>
                                 <th class="p-3 text-left">Last hour</th>
                                 <th class="p-3 text-left">Today</th>
-                                <th class="p-3 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(stat, index) in statsGroup" :key="stat.id"
-                                class="border-t hover:bg-gray-50 transition">
+                            <tr v-for="(stat, index) in statsGroup" :key="stat.id" class="border-t hover:bg-gray-50 transition">
                                 <td class="p-3 font-medium text-gray-800 whitespace-nowrap">
                                     {{ formatTime(stat.created_at) }}
                                 </td>
@@ -67,23 +63,16 @@
                                 <td class="p-3 text-gray-700">
                                     <span>
                                         {{ stat.last_10_minutes_diff }}
-                                        <span :class="getChangeClass(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"
-                                            v-html="getChangeArrow(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"></span>
+                                        <span
+                                            :class="getChangeClass(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"
+                                            v-html="getChangeArrow(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)">
+                                        </span>
                                     </span>
                                 </td>
                                 <td class="p-3 text-gray-700">
                                     <span v-if="stat.last_hour_diff !== null">{{ stat.last_hour_diff }}</span>
                                 </td>
                                 <td class="p-3 text-gray-700">{{ stat.today_diff }}</td>
-                                <td class="p-3 text-center">
-                                    <Link :href="route('admin.links.stats.edit', { link: link.id, stat: stat.id })"
-                                        class="text-blue-600 hover:text-blue-800 mr-2">
-                                        <i class="fas fa-pencil-alt text-sm"></i>
-                                    </Link>
-                                    <button @click="deleteStat(stat.id)" class="text-red-600 hover:text-red-800">
-                                        <i class="fas fa-trash-alt text-sm"></i>
-                                    </button>
-                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -106,12 +95,12 @@
                 </button>
             </div>
         </div>
-    </AdminLayout>
+    </AuthenticatedLayout>
 </template>
 
 <script setup>
 import GoBack from '@/Components/GoBack.vue';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, usePage, router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
@@ -177,33 +166,6 @@ const getChangeArrow = (currentValue, rowIndex, key, group) => {
         return '<i class="fas fa-arrow-down"></i> ' + percentChange + '%';
     }
     return '';
-};
-
-// Delete stat using SweetAlert2 for confirmation
-const deleteStat = async (id) => {
-    const result = await Swal.fire({
-        title: 'Are you sure?',
-        text: 'Do you want to delete this stat?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#2563eb',
-        cancelButtonColor: '#6b7280',
-    });
-    if (result.isConfirmed) {
-        await router.delete(route('admin.links.stats.destroy', { link: link.id, stat: id }), {
-            onSuccess: () => {
-                stats.value.data = stats.value.data.filter((stat) => stat.id !== id);
-                Swal.fire({
-                    title: 'Deleted!',
-                    text: 'The stat has been deleted.',
-                    icon: 'success',
-                    confirmButtonColor: '#2563eb',
-                });
-            },
-        });
-    }
 };
 
 // Dynamic auto-refresh using setting: link_stats_update_interval (in minutes)

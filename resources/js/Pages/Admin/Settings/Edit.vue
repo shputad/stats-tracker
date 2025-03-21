@@ -1,155 +1,160 @@
 <template>
+
     <Head title="Admin Settings" />
 
     <AdminLayout>
-        <div class="mx-auto">
-            <h1 class="text-2xl font-bold mb-6">Admin Settings</h1>
+        <div class="mx-auto max-w-3xl">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6">Admin Settings</h1>
 
-            <form @submit.prevent="submit" class="bg-white p-6 shadow rounded">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form @submit.prevent="submit" class="bg-white p-6 shadow-lg rounded-lg space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Link Stats Update Interval -->
-                    <div class="mb-4">
-                        <label for="link_stats_update_interval" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="link_stats_update_interval" class="block text-sm font-medium text-gray-700">
                             Link Stats Update Interval (in minutes)
                         </label>
                         <input v-model="form.link_stats_update_interval" type="number" id="link_stats_update_interval"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.link_stats_update_interval" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.link_stats_update_interval" class="text-red-600 text-sm mt-1">
                             {{ form.errors.link_stats_update_interval }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Profile Stats Update Interval -->
-                    <div class="mb-4">
-                        <label for="profile_stats_update_interval" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="profile_stats_update_interval" class="block text-sm font-medium text-gray-700">
                             Profile Stats Update Interval (in minutes)
                         </label>
                         <input v-model="form.profile_stats_update_interval" type="number"
                             id="profile_stats_update_interval"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.profile_stats_update_interval" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.profile_stats_update_interval" class="text-red-600 text-sm mt-1">
                             {{ form.errors.profile_stats_update_interval }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Stats Per Page -->
-                    <div class="mb-4">
-                        <label for="stats_per_page" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="stats_per_page" class="block text-sm font-medium text-gray-700">
                             Stats Per Page
                         </label>
                         <input v-model="form.stats_per_page" type="number" id="stats_per_page"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.stats_per_page" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.stats_per_page" class="text-red-600 text-sm mt-1">
                             {{ form.errors.stats_per_page }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- CapMonster API Key -->
-                    <div class="mb-4">
-                        <label for="capmonster_api_key" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="capmonster_api_key" class="block text-sm font-medium text-gray-700">
                             CapMonster API Key
                         </label>
                         <input v-model="form.capmonster_api_key" type="text" id="capmonster_api_key"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.capmonster_api_key" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.capmonster_api_key" class="text-red-600 text-sm mt-1">
                             {{ form.errors.capmonster_api_key }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- 2Captcha API Key -->
-                    <div class="mb-4">
-                        <label for="twocaptcha_api_key" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="twocaptcha_api_key" class="block text-sm font-medium text-gray-700">
                             2Captcha API Key
                         </label>
                         <input v-model="form.twocaptcha_api_key" type="text" id="twocaptcha_api_key"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.twocaptcha_api_key" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.twocaptcha_api_key" class="text-red-600 text-sm mt-1">
                             {{ form.errors.twocaptcha_api_key }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Google Cloud Run URL -->
-                    <div class="mb-4">
-                        <label for="google_cloud_run_url" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="google_cloud_run_url" class="block text-sm font-medium text-gray-700">
                             Google Cloud Run URL
                         </label>
                         <input v-model="form.google_cloud_run_url" type="text" id="google_cloud_run_url"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.google_cloud_run_url" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.google_cloud_run_url" class="text-red-600 text-sm mt-1">
                             {{ form.errors.google_cloud_run_url }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Proxy Type -->
-                    <div class="mb-4">
-                        <label for="proxy_type" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="proxy_type" class="block text-sm font-medium text-gray-700">
                             Proxy Type
                         </label>
-                        <select id="proxy_type" class="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                            v-model="form.proxy_type">
+                        <select id="proxy_type" v-model="form.proxy_type"
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Select a type</option>
                             <option value="http">http</option>
                             <option value="https">https</option>
                             <option value="socks4">socks4</option>
                             <option value="socks5">socks5</option>
                         </select>
-                        <span v-if="form.errors.proxy_type" class="text-red-600 text-sm">
+                        <p v-if="form.errors.proxy_type" class="text-red-600 text-sm mt-1">
                             {{ form.errors.proxy_type }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Proxy Address -->
-                    <div class="mb-4">
-                        <label for="proxy_address" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="proxy_address" class="block text-sm font-medium text-gray-700">
                             Proxy Address
                         </label>
                         <input v-model="form.proxy_address" type="text" id="proxy_address"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.proxy_address" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.proxy_address" class="text-red-600 text-sm mt-1">
                             {{ form.errors.proxy_address }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Proxy Port -->
-                    <div class="mb-4">
-                        <label for="proxy_port" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="proxy_port" class="block text-sm font-medium text-gray-700">
                             Proxy Port
                         </label>
                         <input v-model="form.proxy_port" type="text" id="proxy_port"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.proxy_port" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.proxy_port" class="text-red-600 text-sm mt-1">
                             {{ form.errors.proxy_port }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Proxy Login -->
-                    <div class="mb-4">
-                        <label for="proxy_login" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="proxy_login" class="block text-sm font-medium text-gray-700">
                             Proxy Login
                         </label>
                         <input v-model="form.proxy_login" type="text" id="proxy_login"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.proxy_login" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.proxy_login" class="text-red-600 text-sm mt-1">
                             {{ form.errors.proxy_login }}
-                        </span>
+                        </p>
                     </div>
 
                     <!-- Proxy Password -->
-                    <div class="mb-4">
-                        <label for="proxy_password" class="block text-gray-700 font-medium">
+                    <div>
+                        <label for="proxy_password" class="block text-sm font-medium text-gray-700">
                             Proxy Password
                         </label>
                         <input v-model="form.proxy_password" type="password" id="proxy_password"
-                            class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                        <span v-if="form.errors.proxy_password" class="text-red-600 text-sm">
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.proxy_password" class="text-red-600 text-sm mt-1">
                             {{ form.errors.proxy_password }}
-                        </span>
+                        </p>
                     </div>
                 </div>
 
-                <button type="submit" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    Save Settings
-                </button>
+                <!-- Submit Button -->
+                <div class="pt-2">
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-md hover:bg-blue-700 transition">
+                        Save Settings
+                    </button>
+                </div>
             </form>
         </div>
     </AdminLayout>
@@ -158,7 +163,7 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { useToast } from 'vue-toastification';
-import { Head, useForm, usePage, router } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 
 const toast = useToast();
 const { props } = usePage();
@@ -177,17 +182,11 @@ const form = useForm({
     proxy_password: props.settings.proxy_password || '',
 });
 
-const flash = props.flash || {};
-
 const submit = () => {
     form.post(route('admin.settings.update'), {
         preserveScroll: true,
-        onSuccess: () => {
-            toast.success('Settings updated successfully!');
-        },
-        onError: () => {
-            toast.error('Error updating settings.');
-        },
+        onSuccess: () => toast.success('Settings updated successfully!'),
+        onError: () => toast.error('Error updating settings.')
     });
 };
 </script>

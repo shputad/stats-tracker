@@ -3,56 +3,63 @@
 
     <AdminLayout>
         <div class="mx-auto">
-            <!-- Responsive Header -->
+            <!-- Header -->
             <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold mb-4 sm:mb-0">Network Channels</h1>
+                <h1 class="text-2xl font-bold mb-4 sm:mb-0 text-gray-800">Manage Network Channels</h1>
                 <Link :href="route('admin.network-channels.create')"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                Create Channel
+                      class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md shadow hover:bg-blue-700 transition">
+                    + Create Channel
                 </Link>
             </div>
 
-            <!-- Table Container for Responsive Scrolling -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full border-collapse border border-gray-200">
-                    <thead class="bg-gray-100">
+            <!-- Table -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
                         <tr>
-                            <th class="border border-gray-300 p-2 text-left">Name</th>
-                            <th class="border border-gray-300 p-2 text-left">Website</th>
-                            <th class="border border-gray-300 p-2 text-center">Has API</th>
-                            <th class="border border-gray-300 p-2 text-center">Status</th>
-                            <th class="border border-gray-300 p-2 text-center">Actions</th>
+                            <th class="p-3 text-left">Name</th>
+                            <th class="p-3 text-left">Website</th>
+                            <th class="p-3 text-center">Has API</th>
+                            <th class="p-3 text-center">Status</th>
+                            <th class="p-3 text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="channel in channels" :key="channel.id" class="hover:bg-gray-50">
-                            <td class="border border-gray-300 p-2">{{ channel.name }}</td>
-                            <td class="border border-gray-300 p-2">
+                        <tr v-for="channel in channels" :key="channel.id" class="border-t hover:bg-gray-50 transition">
+                            <td class="p-3 font-medium text-gray-800">{{ channel.name }}</td>
+                            <td class="p-3">
                                 <a :href="channel.website" target="_blank"
-                                    class="text-blue-600 underline truncate block" :title="channel.website"
-                                    style="max-width: 400px; white-space: break-spaces; text-overflow: ellipsis; word-break: break-word;">
-                                    {{ channel.website }}
+                                   class="text-blue-600 hover:underline break-words block max-w-[400px] truncate"
+                                   :title="channel.website">
+                                   {{ channel.website }}
                                 </a>
                             </td>
-                            <td class="border border-gray-300 p-2 text-center">
-                                {{ channel.has_api ? 'Yes' : 'No' }}
-                            </td>
-                            <td class="border border-gray-300 p-2 text-center">
-                                <span :class="`px-2 py-1 rounded text-xs text-white font-bold ${channel.status === 'active' ? 'bg-green-600' : 'bg-red-600'
-                                    }`">
-                                    {{ String(channel.status).charAt(0).toUpperCase() + String(channel.status).slice(1)
-                                    }}
+                            <td class="p-3 text-center">
+                                <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">
+                                    {{ channel.has_api ? 'Yes' : 'No' }}
                                 </span>
                             </td>
-                            <td class="border border-gray-300 p-2 text-center">
+                            <td class="p-3 text-center">
+                                <span :class="[
+                                    'px-2 py-1 rounded text-xs font-bold',
+                                    channel.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                ]">
+                                    {{ channel.status.charAt(0).toUpperCase() + channel.status.slice(1) }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-center flex justify-center space-x-3">
                                 <Link :href="route('admin.network-channels.edit', channel.id)"
-                                    class="text-blue-600 hover:underline">
-                                <i class="fas fa-pencil text-sm"></i>
+                                      class="text-blue-600 hover:text-blue-800" title="Edit">
+                                    <i class="fas fa-pencil-alt"></i>
                                 </Link>
-                                <button @click="deleteChannel(channel.id)" class="text-red-600 hover:underline ml-3">
-                                    <i class="fas fa-trash text-sm"></i>
+                                <button @click="deleteChannel(channel.id)"
+                                        class="text-red-600 hover:text-red-800" title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </td>
+                        </tr>
+                        <tr v-if="channels.length === 0">
+                            <td colspan="5" class="p-4 text-center text-gray-500">No network channels found.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -78,8 +85,8 @@ const deleteChannel = async (id) => {
         showCancelButton: true,
         confirmButtonText: 'Yes, delete it!',
         cancelButtonText: 'Cancel',
-        confirmButtonColor: '#2563eb', // Tailwind blue-600
-        cancelButtonColor: '#6b7280',  // Tailwind gray-600
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6b7280',
     });
 
     if (result.isConfirmed) {

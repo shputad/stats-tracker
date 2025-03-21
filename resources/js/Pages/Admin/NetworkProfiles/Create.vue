@@ -2,72 +2,91 @@
     <Head title="Create Network Profile" />
 
     <AdminLayout>
-        <div class="mx-auto">
-            <h1 class="text-2xl font-bold mb-6">
-                <GoBack :href="route('admin.network-profiles.index')" />
+        <div class="mx-auto max-w-3xl">
+            <!-- Page Heading -->
+            <h1 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <GoBack :href="route('admin.network-profiles.index')" class="mr-2" />
                 Create Network Profile
             </h1>
-            <form @submit.prevent="submit" class="bg-white p-6 shadow rounded">
-                <!-- User Field -->
+
+            <!-- Form Card -->
+            <form @submit.prevent="submit" class="bg-white p-6 shadow-lg rounded-lg">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Profile Details</h2>
+
+                <!-- User -->
                 <div class="mb-4">
-                    <label for="user_id" class="block text-gray-700 font-medium">User</label>
+                    <label for="user_id" class="block text-sm font-medium text-gray-700">User</label>
                     <select v-model="form.user_id" id="user_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-                        <option v-for="user in users" :value="user.id" :key="user.id">{{ user.name }}</option>
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option disabled value="">Select User</option>
+                        <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
                     </select>
-                    <span v-if="form.errors.user_id" class="text-red-600 text-sm">{{ form.errors.user_id }}</span>
+                    <p v-if="form.errors.user_id" class="text-red-600 text-sm mt-1">{{ form.errors.user_id }}</p>
                 </div>
-                <!-- Network Channel Field -->
+
+                <!-- Network Channel -->
                 <div class="mb-4">
-                    <label for="channel_id" class="block text-gray-700 font-medium">Network Channel</label>
+                    <label for="channel_id" class="block text-sm font-medium text-gray-700">Network Channel</label>
                     <select v-model="form.channel_id" id="channel_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-                        <option v-for="channel in channels" :value="channel.id" :key="channel.id">{{ channel.name }}
-                        </option>
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option disabled value="">Select Channel</option>
+                        <option v-for="channel in channels" :key="channel.id" :value="channel.id">{{ channel.name }}</option>
                     </select>
-                    <span v-if="form.errors.channel_id" class="text-red-600 text-sm">{{ form.errors.channel_id }}</span>
+                    <p v-if="form.errors.channel_id" class="text-red-600 text-sm mt-1">{{ form.errors.channel_id }}</p>
                 </div>
-                <!-- Link Field -->
+
+                <!-- Link -->
                 <div class="mb-4">
-                    <label for="link_id" class="block text-gray-700 font-medium">Link</label>
+                    <label for="link_id" class="block text-sm font-medium text-gray-700">Link</label>
                     <select v-model="form.link_id" id="link_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-                        <option v-for="link in links" :value="link.id" :key="link.id">{{ link.name }}</option>
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option disabled value="">Select Link</option>
+                        <option v-for="link in links" :key="link.id" :value="link.id">{{ link.name }}</option>
                     </select>
-                    <span v-if="form.errors.link_id" class="text-red-600 text-sm">{{ form.errors.link_id }}</span>
+                    <p v-if="form.errors.link_id" class="text-red-600 text-sm mt-1">{{ form.errors.link_id }}</p>
                 </div>
-                <!-- Account ID Field -->
+
+                <!-- Account ID -->
                 <div class="mb-4">
-                    <label for="account_id" class="block text-gray-700 font-medium">Account ID</label>
+                    <label for="account_id" class="block text-sm font-medium text-gray-700">Account ID</label>
                     <input v-model="form.account_id" type="text" id="account_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                    <span v-if="form.errors.account_id" class="text-red-600 text-sm">{{ form.errors.account_id }}</span>
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <p v-if="form.errors.account_id" class="text-red-600 text-sm mt-1">{{ form.errors.account_id }}</p>
                 </div>
-                <!-- API Key Field -->
+
+                <!-- API Key -->
                 <div class="mb-4">
-                    <label for="api_key" class="block text-gray-700 font-medium">API Key</label>
+                    <label for="api_key" class="block text-sm font-medium text-gray-700">API Key</label>
                     <input v-model="form.api_key" type="text" id="api_key"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
-                    <span v-if="form.errors.api_key" class="text-red-600 text-sm">{{ form.errors.api_key }}</span>
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <p v-if="form.errors.api_key" class="text-red-600 text-sm mt-1">{{ form.errors.api_key }}</p>
                 </div>
-                <!-- Status Field -->
-                <div class="mb-4">
-                    <label for="status" class="block text-gray-700 font-medium">Status</label>
+
+                <!-- Status -->
+                <div class="mb-6">
+                    <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
                     <select v-model="form.status" id="status"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option disabled value="">Select Status</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                     </select>
-                    <span v-if="form.errors.status" class="text-red-600 text-sm">{{ form.errors.status }}</span>
+                    <p v-if="form.errors.status" class="text-red-600 text-sm mt-1">{{ form.errors.status }}</p>
                 </div>
-                <!-- Buttons -->
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+
+                <!-- Actions -->
+                <div class="flex flex-col sm:flex-row gap-4 pt-2">
+                    <button
+                        type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 transition"
+                    >
                         Create
                     </button>
-                    <Link :href="route('admin.network-profiles.index')"
-                        class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700" role="button">
-                    Cancel
+                    <Link
+                        :href="route('admin.network-profiles.index')"
+                        class="px-4 py-2 bg-gray-600 text-white text-sm font-semibold rounded-md hover:bg-gray-700 transition text-center"
+                    >
+                        Cancel
                     </Link>
                 </div>
             </form>
