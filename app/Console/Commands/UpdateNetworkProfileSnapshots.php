@@ -32,6 +32,8 @@ class UpdateNetworkProfileSnapshots extends Command
      */
     public function handle()
     {
+        $takenAt = now();
+
         $profiles = NetworkProfile::with('networkChannel')
             ->whereHas('networkChannel', fn ($q) => $q->where('has_api', true))
             ->where(function ($query) {
@@ -99,7 +101,7 @@ class UpdateNetworkProfileSnapshots extends Command
                 NetworkProfileSnapshot::create([
                     'profile_id' => $profile->id,
                     'balance' => $balance,
-                    'taken_at' => now(),
+                    'taken_at' => $takenAt,
                 ]);
 
                 $today = Carbon::today();

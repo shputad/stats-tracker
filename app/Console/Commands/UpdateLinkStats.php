@@ -31,6 +31,7 @@ class UpdateLinkStats extends Command
      */
     public function handle()
     {
+        $timestamp = now()->startOfMinute();
         $links = Link::where('status', 'active')->get();
         $apiKey = Setting::where('key', 'twocaptcha_api_key')->value('value');
         $cloudRunUrl = Setting::where('key', 'google_cloud_run_url')->value('value');
@@ -55,6 +56,7 @@ class UpdateLinkStats extends Command
                         'link_id' => $link->id,
                         'log' => $result['logsCount'],
                         'detailed_log' => $result['detailedLogsCount'],
+                        'created_at' => $timestamp,
                     ]);
 
                     $this->info("Updated stats for link ID: {$link->id} - Logs: {$result['logsCount']}, Detailed Logs: {$result['detailedLogsCount']}");
