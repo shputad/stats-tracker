@@ -23,6 +23,7 @@
                             <th class="p-3 text-left">Channel</th>
                             <th class="p-3 text-left">Link</th>
                             <th class="p-3 text-left">Account ID</th>
+                            <th class="p-3 text-left">API Username</th>
                             <th class="p-3 text-left">API Key</th>
                             <th class="p-3 text-center">Status</th>
                             <th class="p-3 text-center">Actions</th>
@@ -40,7 +41,31 @@
                                 {{ profile.link ? profile.link.name : '—' }}
                             </td>
                             <td class="p-3 text-gray-700">{{ profile.account_id }}</td>
-                            <td class="p-3 text-gray-700">{{ profile.api_key }}</td>
+                            <td class="p-3 text-gray-700 max-w-[220px] truncate">
+                                <span v-if="profile.api_username" class="truncate inline-block max-w-[180px]" :title="profile.api_username">
+                                    {{ profile.api_username }}
+                                </span>
+                                <span v-else class="text-gray-400 italic">—</span>
+                            </td>
+                            <td class="p-3 text-gray-700 max-w-[220px] truncate relative group">
+                                <div v-if="profile.api_key" class="flex items-center space-x-2">
+                                    <span
+                                        class="truncate max-w-[180px] inline-block"
+                                        :title="profile.api_key"
+                                        style="white-space: nowrap"
+                                    >
+                                        {{ profile.api_key }}
+                                    </span>
+                                    <button
+                                        @click="copyToClipboard(profile.api_key)"
+                                        class="text-gray-400 hover:text-gray-600"
+                                        title="Copy API Key"
+                                    >
+                                        <i class="fas fa-copy text-sm"></i>
+                                    </button>
+                                </div>
+                                <span v-else class="text-gray-400 italic">—</span>
+                            </td>
                             <td class="p-3 text-center">
                                 <span
                                     :class="[
@@ -51,7 +76,15 @@
                                     {{ String(profile.status).charAt(0).toUpperCase() + profile.status.slice(1) }}
                                 </span>
                             </td>
-                            <td class="p-3 text-center">
+                            <td class="p-3 text-center flex justify-center space-x-3">
+                                <Link :href="route('admin.network-profiles.stats.index', profile.id)"
+                                    class="text-purple-600 hover:text-purple-800" title="View Stats">
+                                    <i class="fas fa-chart-simple"></i>
+                                </Link>
+                                <Link :href="route('admin.network-profiles.snapshots.index', profile.id)"
+                                    class="text-green-600 hover:text-green-800" title="View Snapshots">
+                                    <i class="fas fa-camera-retro"></i>
+                                </Link>
                                 <Link
                                     :href="route('admin.network-profiles.edit', profile.id)"
                                     class="text-blue-600 hover:text-blue-800 transition"
@@ -86,6 +119,22 @@ import Swal from 'sweetalert2';
 
 const { props } = usePage();
 const profiles = ref(props.profiles);
+
+const copyToClipboard = (text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'API key copied!',
+            showConfirmButton: false,
+            timer: 1500,
+        });
+    }).catch(() => {
+        Swal.fire('Oops', 'Failed to copy API key.', 'error');
+    });
+};
 
 const deleteProfile = async (id) => {
     const result = await Swal.fire({

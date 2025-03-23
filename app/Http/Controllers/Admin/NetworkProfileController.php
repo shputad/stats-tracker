@@ -44,6 +44,8 @@ class NetworkProfileController extends Controller
             'channel_id' => 'required|exists:network_channels,id',
             'link_id' => 'required|exists:links,id',
             'account_id' => 'required|string|max:255',
+            'api_username' => 'nullable|string|max:255',
+            'api_password' => 'nullable|string|max:255',
             'api_key' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
         ]);
@@ -84,6 +86,8 @@ class NetworkProfileController extends Controller
             'channel_id' => 'required|exists:network_channels,id',
             'link_id' => 'required|exists:links,id',
             'account_id' => 'required|string|max:255',
+            'api_username' => 'nullable|string|max:255',
+            'api_password' => 'nullable|string|max:255',
             'api_key' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
         ]);

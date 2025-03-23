@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\LinkController as AdminLinkController;
 use App\Http\Controllers\Admin\LinkStatController as AdminLinkStatController;
 use App\Http\Controllers\Admin\NetworkProfileController as AdminNetworkProfileController;
 use App\Http\Controllers\Admin\NetworkProfileStatController as AdminNetworkProfileStatController;
+use App\Http\Controllers\Admin\NetworkProfileSnapshotController as AdminNetworkProfileSnapshotController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\ToolsController as AdminToolsController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\User\LinkController as UserLinkController;
 use App\Http\Controllers\User\LinkStatController as UserLinkStatController;
 use App\Http\Controllers\User\NetworkProfileController as UserNetworkProfileController;
 use App\Http\Controllers\User\NetworkProfileStatController as UserNetworkProfileStatController;
+use App\Http\Controllers\User\NetworkProfileSnapshotController as UserNetworkProfileSnapshotController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -82,7 +84,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Sub-Routes
     Route::resource('links.stats', AdminLinkStatController::class);
-    Route::resource('network-profiles/{profile}/stats', AdminNetworkProfileStatController::class);
+    Route::resource('network-profiles.snapshots', AdminNetworkProfileSnapshotController::class);
+    Route::resource('network-profiles.stats', AdminNetworkProfileStatController::class);
+    Route::put('network-profiles/{profile}/stats/{date}/topup', [AdminNetworkProfileStatController::class, 'updateTopup'])->name('network-profiles.stats.updateTopup');
 
     // Profile
     Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
@@ -99,8 +103,12 @@ Route::middleware(['auth', 'role:user'])->name('user.')->group(function () {
 
     // Sub-Routes
     Route::resource('links.stats', UserLinkStatController::class)->only(['index', 'show']);
-    Route::resource('network-profiles/{profile}/stats', UserNetworkProfileStatController::class);
+    Route::resource('network-profiles.snapshots', UserNetworkProfileSnapshotController::class);
+    Route::resource('network-profiles.stats', UserNetworkProfileStatController::class);
+    Route::put('network-profiles/{profile}/stats/{date}/topup', [UserNetworkProfileStatController::class, 'updateTopup'])->name('network-profiles.stats.updateTopup');
 
+
+    Route::get('/daily-summary', [UserController::class, 'dailySummary'])->name('daily-summary');
     Route::post('/impersonate-leave', [UserController::class, 'leaveImpersonation'])->name('leave-impersonation');
 
     // Profile

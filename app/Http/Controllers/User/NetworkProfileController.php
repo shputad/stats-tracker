@@ -43,6 +43,8 @@ class NetworkProfileController extends Controller
         $request->validate([
             'channel_id' => 'required|exists:network_channels,id',
             'account_id' => 'required|string|max:255',
+            'api_username' => 'nullable|string|max:255',
+            'api_password' => 'nullable|string|max:255',
             'api_key' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
         ]);
@@ -52,6 +54,8 @@ class NetworkProfileController extends Controller
             'channel_id' => $request->channel_id,
             'link_id' => null,
             'account_id' => $request->account_id,
+            'api_username' => $request->api_username,
+            'api_password' => $request->api_password,
             'api_key' => $request->api_key,
             'status' => $request->status,
         ]);
@@ -90,11 +94,13 @@ class NetworkProfileController extends Controller
         $request->validate([
             'channel_id' => 'required|exists:network_channels,id',
             'account_id' => 'required|string|max:255',
+            'api_username' => 'nullable|string|max:255',
+            'api_password' => 'nullable|string|max:255',
             'api_key' => 'nullable|string|max:255',
             'status' => 'required|in:active,inactive',
         ]);
 
-        $networkProfile->update($request->only('channel_id', 'account_id', 'api_key', 'status'));
+        $networkProfile->update($request->only('channel_id', 'account_id', 'api_username', 'api_password', 'api_key', 'status'));
 
         return redirect()->route('user.network-profiles.index');
     }

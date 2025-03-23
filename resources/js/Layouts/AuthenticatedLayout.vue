@@ -37,6 +37,13 @@
                         </Link>
                     </li>
                     <li>
+                        <Link :href="'/daily-summary'"
+                            class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
+                            :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/daily-summary') }">
+                            <i class="fas fa-calendar-day mr-2"></i> Daily Summary
+                        </Link>
+                    </li>
+                    <li>
                         <Link :href="route('user.profile.edit')"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/profile') }">

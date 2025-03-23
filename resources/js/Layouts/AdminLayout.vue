@@ -41,7 +41,13 @@
                         <Link :href="'/admin/network-profiles'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/network-profiles') }">
-                        <i class="fas fa-user-circle mr-2"></i> Network Profiles
+                            <i class="fas fa-user-circle mr-2"></i> Network Profiles
+                            <span v-if="unlinkedProfilesCount > 0"
+                                class="ml-auto bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full"
+                                :title="`${unlinkedProfilesCount} profile(s) missing links – please review`"
+                            >
+                                {{ unlinkedProfilesCount }}
+                            </span>
                         </Link>
                     </li>
                     <li>
@@ -60,9 +66,16 @@
                     </li>
                     <li>
                         <Link :href="'/admin/tools'"
-                            class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
+                            class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition relative group"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/tools') }">
-                        <i class="fas fa-tools mr-2"></i> Tools
+                            <i class="fas fa-tools mr-2 opacity-50 group-hover:opacity-80"></i>
+                            <span class="line-through opacity-60 group-hover:opacity-90">Tools</span>
+                            <span 
+                                class="absolute top-1/2 right-5 text-[16px] text-yellow-400 px-1 rounded-full transform translate-x-1/2 -translate-y-1/2 shadow-md"
+                                title="This section has been discontinued"
+                            >
+                                <i class="fas fa-circle-exclamation"></i>
+                            </span>
                         </Link>
                     </li>
                     <li>
@@ -103,6 +116,9 @@ const showSidebar = ref(false);
 const currentRoute = usePage().url;
 const isImpersonating = usePage().props.auth.user.isImpersonating || false;
 const isDesktop = ref(false);
+
+// Fetch the count of unlinked network profiles from the backend
+const unlinkedProfilesCount = ref(usePage().props.unlinkedProfilesCount || 0);
 
 const toggleSidebar = () => {
     showSidebar.value = !showSidebar.value;

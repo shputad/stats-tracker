@@ -1,5 +1,5 @@
 <template>
-    <Head title="Link Stats" />
+    <Head :title="`Stats – ${link.name}`" />
 
     <AdminLayout>
         <div class="mx-auto">
@@ -66,9 +66,13 @@
                                 <td class="p-3 font-semibold text-blue-700">{{ stat.log }}</td>
                                 <td class="p-3 text-gray-700">
                                     <span>
-                                        {{ stat.last_10_minutes_diff }}
+                                        {{ stat.last_10_minutes_diff ?? 'N/A' }}
                                         <span :class="getChangeClass(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"
-                                            v-html="getChangeArrow(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"></span>
+                                            v-html="getChangeArrow(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)">
+                                        </span>
+                                        <i v-if="stat.last_10_minutes_tooltip"
+                                        class="fas fa-info-circle text-gray-400 ml-1"
+                                        :title="stat.last_10_minutes_tooltip"></i>
                                     </span>
                                 </td>
                                 <td class="p-3 text-gray-700">
@@ -244,14 +248,34 @@ const refreshStats = () => {
 };
 
 const announceLast10Logs = () => {
-    if (stats.value.data && stats.value.data.length > 0) {
-        const newestStat = stats.value.data[0];
-        const count = newestStat.last_10_minutes_diff;
-        const message =
-            count > 0
-                ? `In the last 10 minutes, ${count} logs were recorded.`
-                : `No new logs recorded in the last 10 minutes.`;
-        const utterance = new SpeechSynthesisUtterance(message);
+    if (!stats.value?.data?.length) return;
+
+    const newestStat = stats.value.data[0];
+    const diff = parseFloat(newestStat.last_10_minutes_diff);
+    const tooltip = newestStat.last_10_minutes_tooltip;
+
+    let msg = '';
+
+    if (tooltip) {
+        // Tooltip exists → stat older than 10 mins
+        if (isNaN(diff) || diff === 0) {
+            msg = `No log changes since the last stat. ${tooltip}.`;
+        } else if (diff < 0) {
+            msg = `Log count dropped by ${Math.abs(diff)}. ${tooltip}.`;
+        } else {
+            msg = `${diff} logs recorded. ${tooltip}.`;
+        }
+    } else {
+        // Within 10-minute freshness
+        if (isNaN(diff) || diff === 0) {
+            msg = 'No new logs recorded in the last 10 minutes.';
+        } else {
+            msg = `In the last 10 minutes, ${diff} logs were recorded.`;
+        }
+    }
+
+    if (!muteAnnouncement.value && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(msg);
         utterance.lang = 'en-US';
         window.speechSynthesis.speak(utterance);
     }

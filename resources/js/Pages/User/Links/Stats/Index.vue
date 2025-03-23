@@ -1,10 +1,10 @@
 <template>
-    <Head title="Link Stats" />
+    <Head :title="`Stats – ${link.name}`" />
 
     <AuthenticatedLayout>
         <div class="mx-auto">
 
-            <!-- Header with Auto Refresh -->
+            <!-- Header with GoBack and Actions -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800">
@@ -34,12 +34,12 @@
                 </div>
             </div>
 
-            <!-- No Stats Message -->
+            <!-- No stats fallback -->
             <div v-if="Object.keys(groupedStats).length === 0" class="text-center text-gray-500 py-12">
                 No stats found for this link.
             </div>
 
-            <!-- Grouped Stats -->
+            <!-- Grouped Stats by Date -->
             <div v-for="(statsGroup, date) in groupedStats" :key="date" class="mb-10">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4">{{ date }}</h2>
 
@@ -55,18 +55,21 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(stat, index) in statsGroup" :key="stat.id" class="border-t hover:bg-gray-50 transition">
+                            <tr v-for="(stat, index) in statsGroup" :key="stat.id"
+                                class="border-t hover:bg-gray-50 transition">
                                 <td class="p-3 font-medium text-gray-800 whitespace-nowrap">
                                     {{ formatTime(stat.created_at) }}
                                 </td>
                                 <td class="p-3 font-semibold text-blue-700">{{ stat.log }}</td>
                                 <td class="p-3 text-gray-700">
                                     <span>
-                                        {{ stat.last_10_minutes_diff }}
-                                        <span
-                                            :class="getChangeClass(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"
+                                        {{ stat.last_10_minutes_diff ?? 'N/A' }}
+                                        <span :class="getChangeClass(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)"
                                             v-html="getChangeArrow(stat.last_10_minutes_diff, index, 'last_10_minutes_diff', statsGroup)">
                                         </span>
+                                        <i v-if="stat.last_10_minutes_tooltip"
+                                        class="fas fa-info-circle text-gray-400 ml-1"
+                                        :title="stat.last_10_minutes_tooltip"></i>
                                     </span>
                                 </td>
                                 <td class="p-3 text-gray-700">
@@ -206,14 +209,34 @@ const refreshStats = () => {
 };
 
 const announceLast10Logs = () => {
-    if (stats.value.data && stats.value.data.length > 0) {
-        const newestStat = stats.value.data[0];
-        const count = newestStat.last_10_minutes_diff;
-        const message =
-            count > 0
-                ? `In the last 10 minutes, ${count} logs were recorded.`
-                : `No new logs recorded in the last 10 minutes.`;
-        const utterance = new SpeechSynthesisUtterance(message);
+    if (!stats.value?.data?.length) return;
+
+    const newestStat = stats.value.data[0];
+    const diff = parseFloat(newestStat.last_10_minutes_diff);
+    const tooltip = newestStat.last_10_minutes_tooltip;
+
+    let msg = '';
+
+    if (tooltip) {
+        // Tooltip exists → stat older than 10 mins
+        if (isNaN(diff) || diff === 0) {
+            msg = `No log changes since the last stat. ${tooltip}.`;
+        } else if (diff < 0) {
+            msg = `Log count dropped by ${Math.abs(diff)}. ${tooltip}.`;
+        } else {
+            msg = `${diff} logs recorded. ${tooltip}.`;
+        }
+    } else {
+        // Within 10-minute freshness
+        if (isNaN(diff) || diff === 0) {
+            msg = 'No new logs recorded in the last 10 minutes.';
+        } else {
+            msg = `In the last 10 minutes, ${diff} logs were recorded.`;
+        }
+    }
+
+    if (!muteAnnouncement.value && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(msg);
         utterance.lang = 'en-US';
         window.speechSynthesis.speak(utterance);
     }

@@ -53,9 +53,9 @@
                             <tr v-for="link in recentLinks" :key="link.id" class="hover:bg-gray-50">
                                 <td class="p-3 border-b">{{ link.name }}</td>
                                 <td class="p-3 border-b">
-                                    <a :href="link.url" target="_blank" class="text-blue-600 underline truncate block"
-                                        :title="link.url"
-                                        style="max-width: 400px; white-space: break-spaces; text-overflow: ellipsis; word-break: break-word;">
+                                    <a :href="link.url" target="_blank"
+                                    class="text-blue-600 hover:underline break-words block max-w-[400px] truncate"
+                                    :title="link.url">
                                         {{ link.url }}
                                     </a>
                                 </td>

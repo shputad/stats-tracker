@@ -54,6 +54,22 @@
                     <p v-if="form.errors.account_id" class="text-red-600 text-sm mt-1">{{ form.errors.account_id }}</p>
                 </div>
 
+                <!-- API Username -->
+                <div class="mb-4">
+                    <label for="api_username" class="block text-sm font-medium text-gray-700">API Username</label>
+                    <input v-model="form.api_username" type="text" id="api_username"
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <p v-if="form.errors.api_username" class="text-red-600 text-sm mt-1">{{ form.errors.api_username }}</p>
+                </div>
+
+                <!-- API Password -->
+                <div class="mb-4">
+                    <label for="api_password" class="block text-sm font-medium text-gray-700">API Password</label>
+                    <input v-model="form.api_password" type="password" id="api_password"
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <p v-if="form.errors.api_password" class="text-red-600 text-sm mt-1">{{ form.errors.api_password }}</p>
+                </div>
+
                 <!-- API Key -->
                 <div class="mb-4">
                     <label for="api_key" class="block text-sm font-medium text-gray-700">API Key</label>
@@ -106,6 +122,8 @@ const form = useForm({
     channel_id: '',
     link_id: '',
     account_id: '',
+    api_username: '',
+    api_password: '',
     api_key: '',
     status: '',
 });

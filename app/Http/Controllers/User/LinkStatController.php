@@ -8,6 +8,7 @@ use App\Models\LinkStat;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Carbon;
 
 class LinkStatController extends Controller
 {
@@ -26,13 +27,27 @@ class LinkStatController extends Controller
             ->withQueryString();
 
         $statsWithDifferences = $statsPaginator->getCollection()->map(function ($stat, $index) use ($link, $statsPaginator) {
+            $createdAt = Carbon::parse($stat->created_at);
             $baseLogsType = $link->base_logs_type ?: 'log';
 
-            // Get the log value from the oldest record available in the last 10 minutes
-            $logsBefore10Minutes = $link->linkStats()
-                ->whereBetween('created_at', [$stat->created_at->copy()->subMinutes(10)->startOfMinute(), $stat->created_at->copy()->startOfMinute()])
-                ->orderBy('created_at', 'asc')
-                ->value($baseLogsType) ?? 0;
+            // Previous stat before this one
+            $previous = $link->linkStats()
+                ->where('created_at', '<', $createdAt)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $diffAmount = null;
+            $timeDiffTooltip = null;
+
+            if ($previous) {
+                $prevAt = Carbon::parse($previous->created_at);
+                $diffMinutes = $prevAt->diffInMinutes($createdAt);
+                $diffAmount = $stat->$baseLogsType - $previous->$baseLogsType;
+
+                if ($diffMinutes > 10) {
+                    $timeDiffTooltip = 'Last stat was ' . $prevAt->diffForHumans($createdAt);
+                }
+            }
 
             // Get the log value from the oldest record available in the last hour
             $logsBeforeHour = $link->linkStats()
@@ -65,8 +80,9 @@ class LinkStatController extends Controller
                 'id' => $stat->id,
                 'log' => $stat->$baseLogsType,
                 'created_at' => $stat->created_at,
-                'last_10_minutes_diff' => $stat->$baseLogsType - $logsBefore10Minutes,
-                'last_hour_diff' => $isFirstStatOfHour ? ($logsBeforeHour !== null ? $stat->$baseLogsType - $logsBeforeHour : null) : null,
+                'last_10_minutes_diff' => $diffAmount,
+                'last_10_minutes_tooltip' => $timeDiffTooltip,
+                'last_hour_diff' => $isFirstStatOfHour ? ($stat->$baseLogsType - $logsBeforeHour) : null,
                 'today_diff' => $stat->$baseLogsType - $logsBeforeToday,
             ];
         });
