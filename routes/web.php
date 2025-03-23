@@ -88,6 +88,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('network-profiles.stats', AdminNetworkProfileStatController::class);
     Route::put('network-profiles/{profile}/stats/{date}/topup', [AdminNetworkProfileStatController::class, 'updateTopup'])->name('network-profiles.stats.updateTopup');
 
+    Route::get('/daily-summary', [AdminController::class, 'dailySummary'])->name('daily-summary');
+
     // Profile
     Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [AdminProfileController::class, 'update'])->name('profile.update');

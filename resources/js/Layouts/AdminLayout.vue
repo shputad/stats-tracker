@@ -51,6 +51,13 @@
                         </Link>
                     </li>
                     <li>
+                        <Link :href="'/admin/daily-summary'"
+                            class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
+                            :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/daily-summary') }">
+                            <i class="fas fa-calendar-day mr-2"></i> Daily Summary
+                        </Link>
+                    </li>
+                    <li>
                         <Link :href="'/admin/users'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/users') }">
