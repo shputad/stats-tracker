@@ -116,13 +116,13 @@ class NetworkProfileStatController extends Controller
         return redirect()->route('admin.network-profiles.stats.index', $networkProfile);
     }
 
-    public function updateTopup(Request $request, NetworkProfile $networkProfile, $date)
+    public function updateTopup(Request $request, NetworkProfile $profile, $date)
     {
         $validated = $request->validate([
             'topup_today' => 'required|numeric|min:0',
         ]);
 
-        $stat = $networkProfile->stats()->firstOrCreate(
+        $stat = $profile->stats()->firstOrCreate(
             ['date' => $date],
             [
                 'opening_balance' => 0,
