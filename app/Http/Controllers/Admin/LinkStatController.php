@@ -45,7 +45,7 @@ class LinkStatController extends Controller
                 $diffMinutes = $prevAt->diffInMinutes($createdAt);
                 $diffAmount = $stat->$baseLogsType - $previous->$baseLogsType;
 
-                if ($diffMinutes > 10) {
+                if ($diffMinutes >= 11) {
                     $timeDiffTooltip = 'Last stat was ' . $prevAt->diffForHumans($createdAt);
                 }
             }

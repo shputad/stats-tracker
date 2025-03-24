@@ -92,6 +92,17 @@ class UpdateNetworkProfileSnapshots extends Command
                     $balance = $this->fetchBidmagBalance($apiKey);
                     break;
 
+                case 'zeropark':
+                    $apiKey = $profile->api_key;
+                
+                    if (!$apiKey) {
+                        Log::warning("Missing Zeropark API token for profile ID {$profile->id}");
+                        continue 2;
+                    }
+                
+                    $balance = $this->fetchZeroparkBalance($apiKey);
+                    break;
+
                 default:
                     Log::info("No balance handler for channel '{$profile->networkChannel->name}' (Profile ID: {$profile->id})");
                     continue 2;
@@ -233,6 +244,35 @@ class UpdateNetworkProfileSnapshots extends Command
             ]);
         } catch (\Exception $e) {
             Log::error("Error fetching BidMag balance", [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
+    }
+
+    private function fetchZeroparkBalance(string $apiKey): ?float
+    {
+        $apiKey = trim(str_replace(["\r", "\n"], '', $apiKey));
+
+        try {
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'api-token' => $apiKey,
+                    'Accept' => '*/*',
+                ])
+                ->get('https://panel.zeropark.com/api/account/details');
+
+            if ($response->successful()) {
+                return floatval($response->json()['accountBalance'] ?? 0);
+            }
+
+            Log::error("Zeropark balance fetch failed", [
+                'status' => $response->status(),
+                'response' => $response->json(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error fetching Zeropark balance", [
                 'error' => $e->getMessage(),
             ]);
         }

@@ -62,7 +62,7 @@ class NetworkProfileSnapshotController extends Controller
                 $diffMinutes = $previousTakenAt->diffInMinutes($takenAt);
                 $diffAmount = $snapshot->balance - $previousSnapshot->balance;
             
-                if ($diffMinutes > 10) {
+                if ($diffMinutes >= 11) {
                     $timeDiffTooltip = "Last snapshot was " . $previousTakenAt->diffForHumans($takenAt);
                 }
             }
