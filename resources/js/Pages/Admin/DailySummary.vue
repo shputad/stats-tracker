@@ -7,9 +7,7 @@
             <!-- Header -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800">
-                        Daily Summary
-                    </h1>
+                    <h1 class="text-2xl font-bold text-gray-800">Daily Summary</h1>
                     <p v-if="remainingTime > 0" class="text-sm text-gray-500 mt-1">
                         Next auto-refresh in: <span class="font-semibold">{{ formattedRemainingTime }}</span>
                     </p>
@@ -34,14 +32,61 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in summary" :key="row.date" class="border-t hover:bg-gray-50 transition">
-                            <td class="p-3 font-medium text-gray-800 whitespace-nowrap">{{ row.date }}</td>
-                            <td class="p-3 text-gray-700">{{ formatDecimal(row.opening_balance) }}</td>
-                            <td class="p-3 text-blue-600 font-medium">{{ formatDecimal(row.topup_today) }}</td>
-                            <td class="p-3 text-gray-700">{{ formatDecimal(row.closing_balance) }}</td>
-                            <td class="p-3 text-red-600 font-semibold">{{ computeSpending(row) }}</td>
-                            <td class="p-3 text-indigo-600 font-semibold">{{ row.total_logs }}</td>
-                        </tr>
+                        <template v-for="row in summary" :key="row.date">
+                            <tr class="border-t hover:bg-gray-50 transition cursor-pointer"
+                                @click="toggleExpand(row.date)">
+                                <td class="p-3 font-medium text-gray-800 whitespace-nowrap">
+                                    {{ row.date }}
+                                    <i :class="[
+                                        'fas ml-2 transition-transform duration-300',
+                                        expandedDates.includes(row.date) ? 'fa-chevron-up rotate-180' : 'fa-chevron-down'
+                                    ]"></i>
+                                </td>
+                                <td class="p-3 text-gray-700">{{ formatDecimal(row.opening_balance) }}</td>
+                                <td class="p-3 text-blue-600 font-medium">{{ formatDecimal(row.topup_today) }}</td>
+                                <td class="p-3 text-gray-700">{{ formatDecimal(row.closing_balance) }}</td>
+                                <td class="p-3 text-red-600 font-semibold">{{ computeSpending(row) }}</td>
+                                <td class="p-3 text-indigo-600 font-semibold">{{ row.total_logs }}</td>
+                            </tr>
+                            <transition name="fade-expand">
+                                <tr v-if="expandedDates.includes(row.date)">
+                                    <td colspan="6" class="bg-gray-50 px-4 py-2">
+                                        <table class="w-full text-sm border rounded">
+                                            <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                                                <tr>
+                                                    <th class="p-2 text-left">Profile</th>
+                                                    <th class="p-2 text-left">Opening</th>
+                                                    <th class="p-2 text-left">Topup</th>
+                                                    <th class="p-2 text-left">Closing</th>
+                                                    <th class="p-2 text-left">Spending</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="profile in profilesByDate[row.date]"
+                                                    :key="profile.profile_id"
+                                                    class="border-t hover:bg-white transition">
+                                                    <td class="p-2 text-gray-700">{{ profile.channel }} ({{
+                                                        profile.account_id }})</td>
+                                                    <td class="p-2 text-gray-600">{{
+                                                        formatDecimal(profile.opening_balance) }}</td>
+                                                    <td class="p-2 text-blue-600">{{ formatDecimal(profile.topup_today)
+                                                        }}</td>
+                                                    <td class="p-2 text-gray-600">{{
+                                                        formatDecimal(profile.closing_balance) }}</td>
+                                                    <td class="p-2 text-red-600">{{ computeSpending(profile) }}</td>
+                                                </tr>
+                                                <tr
+                                                    v-if="!profilesByDate[row.date] || profilesByDate[row.date].length === 0">
+                                                    <td colspan="5" class="text-center text-gray-500 py-2">No breakdown
+                                                        available</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </transition>
+                        </template>
+
                         <tr v-if="summary.length === 0">
                             <td colspan="6" class="p-4 text-center text-gray-500">No records available.</td>
                         </tr>
@@ -59,13 +104,23 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const { props } = usePage();
 const summary = ref(props.summary || []);
+const profilesByDate = props.profilesByDate || {};
 const isRefreshing = ref(false);
+const expandedDates = ref([]);
 
 const updateIntervalMinutes = parseFloat(props.settings?.profile_stats_update_interval || 10);
 const updateIntervalMs = updateIntervalMinutes * 60000;
-
 const nextRefreshTime = ref(null);
 const remainingTime = ref(0);
+
+const toggleExpand = (date) => {
+    const index = expandedDates.value.indexOf(date);
+    if (index > -1) {
+        expandedDates.value.splice(index, 1);
+    } else {
+        expandedDates.value.push(date);
+    }
+};
 
 const formatDecimal = (val) => val !== null ? parseFloat(val).toFixed(2) : '0.00';
 
@@ -137,3 +192,15 @@ onUnmounted(() => {
     clearInterval(remainingTimer);
 });
 </script>
+
+<style scoped>
+.fade-expand-enter-active,
+.fade-expand-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-expand-enter-from,
+.fade-expand-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>
