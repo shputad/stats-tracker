@@ -44,16 +44,13 @@ class UserController extends Controller
     {
         $user = $request->user();
 
-        // Get all user profiles with stats and their links
-        $profiles = $user->networkProfiles()->with(['stats', 'link'])->get();
+        $profiles = $user->networkProfiles()->with(['user', 'networkChannel', 'stats', 'link'])->get();
 
         $dailyStats = [];
-        $linkLogsByDate = [];
+        $dailyProfiles = [];
 
-        // Step 1: Collect stats grouped by date from all profiles
         foreach ($profiles as $profile) {
-            $dateStats = $profile->stats ?? [];
-            foreach ($dateStats as $stat) {
+            foreach ($profile->stats as $stat) {
                 $date = $stat->date;
 
                 if (!isset($dailyStats[$date])) {
@@ -69,14 +66,22 @@ class UserController extends Controller
                 $dailyStats[$date]['opening_balance'] += $stat->opening_balance;
                 $dailyStats[$date]['topup_today'] += $stat->topup_today;
                 $dailyStats[$date]['closing_balance'] += $stat->closing_balance ?? $stat->current_balance;
+
+                $dailyProfiles[$date][] = [
+                    'profile_id' => $profile->id,
+                    'channel' => $profile->networkChannel->name,
+                    'account_id' => $profile->account_id,
+                    'opening_balance' => $stat->opening_balance,
+                    'topup_today' => $stat->topup_today,
+                    'closing_balance' => $stat->closing_balance ?? $stat->current_balance,
+                ];
             }
         }
 
-        // Step 2: Get unique links and determine base_logs_type
-        $uniqueLinks = $profiles
-            ->filter(fn($p) => $p->link)
-            ->pluck('link')
-            ->unique('id');
+        // Logs from links
+        $uniqueLinks = $profiles->pluck('link')->filter()->unique('id');
+
+        $linkLogsByDate = [];
 
         foreach ($uniqueLinks as $link) {
             $logStats = \DB::table('link_stats')
@@ -106,12 +111,11 @@ class UserController extends Controller
                 }
 
                 if (!is_null($first) && !is_null($last)) {
-                    $linkLogsByDate[$date] += ($last - $first);
+                    $linkLogsByDate[$date] = ($linkLogsByDate[$date] ?? 0) + ($last - $first);
                 }
             }
         }
 
-        // Step 3: Merge log counts into dailyStats
         foreach ($linkLogsByDate as $date => $logCount) {
             if (!isset($dailyStats[$date])) {
                 $dailyStats[$date] = [
@@ -126,11 +130,11 @@ class UserController extends Controller
             $dailyStats[$date]['total_logs'] = $logCount;
         }
 
-        // Step 4: Sort
-        $sorted = collect($dailyStats)->sortByDesc('date')->values();
+        $summary = collect($dailyStats)->sortByDesc('date')->values()->all();
 
         return Inertia::render('User/DailySummary', [
-            'summary' => $sorted,
+            'summary' => $summary,
+            'profilesByDate' => $dailyProfiles,
         ]);
     }
 

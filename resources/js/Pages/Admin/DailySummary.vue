@@ -15,7 +15,7 @@
                 <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                     <div>
                         <label class="text-sm font-medium text-gray-700 block mb-1">Select User</label>
-                        <select v-model="selectedUserId" @change="onUserChange"
+                        <select v-model.number="selectedUserId" @change="onUserChange"
                             class="text-sm border border-gray-300 rounded px-2 py-1 w-56 shadow-sm">
                             <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
                         </select>
@@ -150,12 +150,23 @@ const formattedRemainingTime = computed(() => {
 
 const refreshSummary = () => {
     isRefreshing.value = true;
-    router.visit(window.location.pathname + '?refresh=' + Date.now(), {
+    router.visit(window.location.pathname, {
+        method: 'get',
+        data: {
+            user_id: selectedUserId.value,
+            refresh: Date.now(),
+        },
         preserveScroll: true,
         replace: true,
         onSuccess: (page) => {
             summary.value = page.props.summary || [];
             isRefreshing.value = false;
+
+            // Optionally re-expand latest row on auto-refresh
+            expandedDates.value = [];
+            if (summary.value.length > 0) {
+                expandedDates.value.push(summary.value[0].date);
+            }
         },
     });
 };
