@@ -30,7 +30,7 @@ class NetworkProfileController extends Controller
         return Inertia::render('Admin/NetworkProfiles/Create', [
             'channels' => NetworkChannel::all(),
             'links' => Link::all(),
-            'users' => User::where('id', '!=', Auth()->id())->where('status', 'active')->get(),
+            'users' => User::where('status', 'active')->get(),
         ]);
     }
 
@@ -72,7 +72,7 @@ class NetworkProfileController extends Controller
             'profile' => $networkProfile->load('networkChannel', 'link', 'user'),
             'channels' => NetworkChannel::all(),
             'links' => Link::all(),
-            'users' => User::where('id', '!=', Auth()->id())->where('status', 'active')->get(),
+            'users' => User::where('status', 'active')->get(),
         ]);
     }
 
