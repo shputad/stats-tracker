@@ -12,10 +12,19 @@
                         Next auto-refresh in: <span class="font-semibold">{{ formattedRemainingTime }}</span>
                     </p>
                 </div>
-                <button @click="refreshSummary"
-                    class="px-4 py-2 bg-green-600 text-white text-sm rounded-md shadow hover:bg-green-700 transition mt-4 sm:mt-0">
-                    <i class="fas fa-sync-alt" :class="{ 'animate-spin': isRefreshing }"></i>
-                </button>
+                <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">Select User</label>
+                        <select v-model="selectedUserId" @change="onUserChange"
+                            class="text-sm border border-gray-300 rounded px-2 py-1 w-56 shadow-sm">
+                            <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
+                        </select>
+                    </div>
+                    <button @click="refreshSummary"
+                        class="px-4 py-2 bg-green-600 text-white text-sm rounded-md shadow hover:bg-green-700 transition mt-2 sm:mt-6">
+                        <i class="fas fa-sync-alt" :class="{ 'animate-spin': isRefreshing }"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Table -->
@@ -103,6 +112,8 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const { props } = usePage();
+const users = props.users || [];
+const selectedUserId = ref(props.selectedUserId || props.auth?.user?.id);
 const summary = ref(props.summary || []);
 const profilesByDate = props.profilesByDate || {};
 const isRefreshing = ref(false);
@@ -145,6 +156,24 @@ const refreshSummary = () => {
         onSuccess: (page) => {
             summary.value = page.props.summary || [];
             isRefreshing.value = false;
+        },
+    });
+};
+
+const onUserChange = () => {
+    isRefreshing.value = true;
+    router.visit(window.location.pathname, {
+        method: 'get',
+        data: { user_id: selectedUserId.value },
+        preserveScroll: true,
+        replace: true,
+        onSuccess: (page) => {
+            summary.value = page.props.summary || [];
+            isRefreshing.value = false;
+            expandedDates.value = [];
+            if (summary.value.length > 0) {
+                expandedDates.value.push(summary.value[0].date); // auto-expand again
+            }
         },
     });
 };
@@ -198,13 +227,16 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.mt-2.sm\:mt-6 {
+    margin-top: 0.75rem;
+}
 .fade-expand-enter-active,
 .fade-expand-leave-active {
-  transition: all 0.3s ease;
+    transition: all 0.3s ease;
 }
 .fade-expand-enter-from,
 .fade-expand-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
+    opacity: 0;
+    transform: translateY(-4px);
 }
 </style>

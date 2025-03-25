@@ -25,7 +25,10 @@ class AdminController extends Controller
 
     public function dailySummary(Request $request)
     {
-        $user = $request->user();
+        $userId = $request->input('user_id', $request->user()->id);
+
+        $user = User::findOrFail($userId);
+
         $profiles = $user->networkProfiles()->with(['user', 'networkChannel', 'stats', 'link'])->get();
 
         $dailyStats = [];
@@ -117,6 +120,8 @@ class AdminController extends Controller
         return Inertia::render('Admin/DailySummary', [
             'summary' => $summary,
             'profilesByDate' => $dailyProfiles,
+            'selectedUserId' => $userId,
+            'users' => User::select('id', 'name')->get(),
         ]);
     }
 }
