@@ -171,6 +171,10 @@ const updateRemainingTime = () => {
 
 let initialTimeout, refreshInterval, remainingTimer;
 onMounted(() => {
+    if (summary.value.length > 0) {
+        expandedDates.value.push(summary.value[0].date);
+    }
+
     const firstDelay = computeFirstRefreshDelay();
     nextRefreshTime.value = new Date(Date.now() + firstDelay);
     updateRemainingTime();
