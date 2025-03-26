@@ -147,9 +147,9 @@ class AdminController extends Controller
 
             foreach ($profile->stats as $stat) {
                 $date = $stat->date;
-                $spending = (float) $stat->opening_balance + (float) $stat->topup_today - (float) ($stat->closing_balance ?? $stat->current_balance);
+                $userSpending = (float) $stat->opening_balance + (float) $stat->topup_today - (float) ($stat->closing_balance ?? $stat->current_balance);
 
-                // Initialize the date row if not exists
+                // Initialize the date row
                 if (!isset($daily[$date])) {
                     $daily[$date] = [
                         'date' => $date,
@@ -159,10 +159,9 @@ class AdminController extends Controller
                     ];
                 }
 
-                // Add spending to the date-level
-                $daily[$date]['spending'] += $spending;
+                $daily[$date]['spending'] += $userSpending;
 
-                // Calculate logs using first/last
+                // Global logs for this link & date
                 $firstLog = \DB::table('link_stats')
                     ->whereDate('created_at', $date)
                     ->where('link_id', $linkId)
@@ -178,49 +177,49 @@ class AdminController extends Controller
                 $logs = (!is_null($firstLog) && !is_null($lastLog)) ? ($lastLog - $firstLog) : 0;
 
                 if (!isset($daily[$date]['total_logs'])) {
-                    // Add logs to date-level logs
                     $daily[$date]['total_logs'] = $logs;
                 }
 
                 if (!isset($daily[$date]['links'][$linkId])) {
-                    // Push link row
                     $daily[$date]['links'][$linkId] = [
                         'link_id' => $linkId,
                         'name' => $linkName,
-                        'spending' => $spending,
-                        'logs' => $logs
+                        'spending' => $userSpending,
+                        'logs' => $logs,
                     ];
                 } else {
-                    $daily[$date]['links'][$linkId]['spending'] += $spending;
+                    $daily[$date]['links'][$linkId]['spending'] += $userSpending;
                 }
 
-                // Fetch CR override
+                // Total spending across ALL users for this link and date
+                $totalLinkSpending = \DB::table('network_profile_stats')
+                    ->join('network_profiles', 'network_profiles.id', '=', 'network_profile_stats.profile_id')
+                    ->where('network_profiles.link_id', $linkId)
+                    ->where('network_profile_stats.date', $date)
+                    ->selectRaw('SUM(opening_balance + topup_today - COALESCE(closing_balance, current_balance)) as total_spending')
+                    ->value('total_spending') ?? 0;
+
+                // CR override
                 $overrideCr = DailyProfitOverride::where('link_id', $linkId)
                     ->where('date', $date)
                     ->value('override_cr');
 
-                // Calculate CR for this link
-                $cr = $overrideCr ?? ($daily[$date]['links'][$linkId]['spending'] > 0 ? round($logs / $daily[$date]['links'][$linkId]['spending'], 4) : 0);
-
+                $cr = $overrideCr ?? ($totalLinkSpending > 0 ? round($logs / $totalLinkSpending, 4) : 0);
                 $daily[$date]['links'][$linkId]['cr'] = $cr;
             }
         }
 
-        // Finalize CR per date
+        // Weighted average CR per day
         foreach ($daily as &$row) {
-            $linkCRs = array_column($row['links'], 'cr');
             $linkSpendings = array_column($row['links'], 'spending');
-            $sumOfAllLinksSpendings = array_sum($linkSpendings);
-        
-            // Calculate weighted average CR
+            $sumSpending = array_sum($linkSpendings);
+
             $weightedCrSum = 0;
             foreach ($row['links'] as $link) {
                 $weightedCrSum += $link['cr'] * $link['spending'];
             }
-        
-            $row['cr'] = $sumOfAllLinksSpendings > 0
-                ? round($weightedCrSum / $sumOfAllLinksSpendings, 4)
-                : 0;
+
+            $row['cr'] = $sumSpending > 0 ? round($weightedCrSum / $sumSpending, 4) : 0;
         }
 
         return Inertia::render('Admin/DailyProfit', [
