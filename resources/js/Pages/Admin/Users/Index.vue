@@ -20,6 +20,7 @@
                             <th class="p-3 text-left">Name</th>
                             <th class="p-3 text-left">Email</th>
                             <th class="p-3 text-center">Role</th>
+                            <th class="p-3 text-center">Profit %</th>
                             <th class="p-3 text-center">Status</th>
                             <th class="p-3 text-center">Actions</th>
                         </tr>
@@ -38,6 +39,7 @@
                                     {{ user.roles[0] ? user.roles[0].name.charAt(0).toUpperCase() + user.roles[0].name.slice(1) : 'No Role' }}
                                 </span>
                             </td>
+                            <td class="p-3 text-center">{{ user.profit_percentage }}%</td>
                             <td class="p-3 text-center">
                                 <span :class="[
                                     'px-2 py-1 rounded text-xs font-bold',

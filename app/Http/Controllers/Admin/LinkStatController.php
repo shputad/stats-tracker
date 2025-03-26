@@ -115,10 +115,36 @@ class LinkStatController extends Controller
         $request->validate([
             'link_id' => 'required|exists:links,id',
             'log' => 'required|integer|min:0',
-            'detailed_log' => 'nullable|integer|min:0'
+            'detailed_log' => 'nullable|integer|min:0',
+            'created_at' => 'nullable|date'
         ]);
 
-        LinkStat::create($request->all());
+        $createdAt = $request->created_at ? Carbon::parse($request->created_at) : now()->startOfMinute();
+
+        // Create main record
+        $stat = LinkStat::create([
+            'link_id' => $request->link_id,
+            'log' => $request->log,
+            'detailed_log' => $request->detailed_log,
+            'created_at' => $createdAt,
+        ]);
+
+        // Check for duplication fallback if between 00:00 and 00:03
+        if ($createdAt->hour === 0 && $createdAt->minute <= 3) {
+            $previousTimestamp = $createdAt->copy()->subDay()->setTime(23, 59);
+            $exists = LinkStat::where('link_id', $link->id)
+                ->where('created_at', $previousTimestamp)
+                ->exists();
+
+            if (!$exists) {
+                LinkStat::create([
+                    'link_id' => $link->id,
+                    'log' => $request->log,
+                    'detailed_log' => $request->detailed_log,
+                    'created_at' => $previousTimestamp,
+                ]);
+            }
+        }
 
         return redirect()->route('admin.links.stats.index', $link->id);
     }
@@ -150,12 +176,35 @@ class LinkStatController extends Controller
         $request->validate([
             'link_id' => 'required|exists:links,id',
             'log' => 'required|integer|min:0',
-            'detailed_log' => 'nullable|integer|min:0'
+            'detailed_log' => 'nullable|integer|min:0',
+            'created_at' => 'nullable|date'
         ]);
 
-        $stat->update($request->all());
+        $createdAt = $request->created_at ? Carbon::parse($request->created_at) : $stat->created_at;
 
-        return redirect()->route('admin.links.stats.index', $request->get('link_id'));
+        $stat->update([
+            'log' => $request->log,
+            'detailed_log' => $request->detailed_log,
+            'created_at' => $createdAt,
+        ]);
+
+        // Check for fallback record between 00:00 and 00:03
+        if ($createdAt->hour === 0 && $createdAt->minute <= 3) {
+            $previousTimestamp = $createdAt->copy()->subDay()->setTime(23, 59);
+
+            LinkStat::updateOrCreate(
+                [
+                    'link_id' => $link->id,
+                    'created_at' => $previousTimestamp,
+                ],
+                [
+                    'log' => $request->log,
+                    'detailed_log' => $request->detailed_log,
+                ]
+            );
+        }
+
+        return redirect()->route('admin.links.stats.index', $link->id);
     }
 
     /**

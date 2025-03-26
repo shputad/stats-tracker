@@ -58,6 +58,13 @@
                         </Link>
                     </li>
                     <li>
+                        <Link :href="'/admin/daily-profit'"
+                            class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
+                            :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/daily-profit') }">
+                            <i class="fas fa-usd mr-2"></i> Daily Profit
+                        </Link>
+                    </li>
+                    <li>
                         <Link :href="'/admin/users'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/users') }">

@@ -51,7 +51,7 @@ class UpdateLinkStats extends Command
                         $result['detailedLogsCount'] = null;
                     }
 
-                    // Save the logs in the LinkStat table
+                    // Save the logs in the LinkStat table for the current timestamp
                     LinkStat::create([
                         'link_id' => $link->id,
                         'log' => $result['logsCount'],
@@ -60,6 +60,27 @@ class UpdateLinkStats extends Command
                     ]);
 
                     $this->info("Updated stats for link ID: {$link->id} - Logs: {$result['logsCount']}, Detailed Logs: {$result['detailedLogsCount']}");
+
+                    // 👇 If this is exactly 00:00, also save a duplicate record for previous day 23:59
+                    if ($timestamp->format('H') === '00' && $timestamp->minute <= 3) {
+                        $duplicateTimestamp = $timestamp->copy()->subDay()->setTime(23, 59);
+
+                        // Prevent duplication if already exists
+                        $exists = LinkStat::where('link_id', $link->id)
+                            ->where('created_at', $duplicateTimestamp)
+                            ->exists();
+
+                        if (!$exists) {
+                            LinkStat::create([
+                                'link_id' => $link->id,
+                                'log' => $result['logsCount'],
+                                'detailed_log' => $result['detailedLogsCount'],
+                                'created_at' => $duplicateTimestamp,
+                            ]);
+
+                            $this->info("🔁 Also added 23:59 log for link ID: {$link->id}");
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 $this->error("Error updating link ID: {$link->id} - " . $e->getMessage());

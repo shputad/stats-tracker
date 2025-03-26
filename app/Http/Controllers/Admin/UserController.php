@@ -38,13 +38,15 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive',
+            'profit_percentage' => 'required|integer|between:0,100',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'status' => $request->status
+            'status' => $request->status,
+            'profit_percentage' => $request->profit_percentage
         ]);
 
         $user->assignRole($request->input('role', 'user'));
@@ -79,12 +81,14 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'status' => 'required|in:active,inactive',
+            'profit_percentage' => 'required|integer|between:0,100',
         ]);
 
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
-            'status' => $request->status
+            'status' => $request->status,
+            'profit_percentage' => $request->profit_percentage
         ]);
 
         if ($request->has('role')) {

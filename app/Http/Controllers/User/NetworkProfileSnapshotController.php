@@ -128,37 +128,37 @@ class NetworkProfileSnapshotController extends Controller
 
         $balance = $request->balance;
         $takenAt = now();
-        $dateKey = $takenAt->toDateString();
+        $today = $takenAt->toDateString();
 
-        // Create snapshot
-        $snapshot = NetworkProfileSnapshot::create([
+        NetworkProfileSnapshot::create([
             'profile_id' => $networkProfile->id,
             'balance' => $balance,
             'taken_at' => $takenAt,
         ]);
 
-        // Update stats table
-        $stat = $networkProfile->stats()->firstOrCreate(
-            ['date' => $dateKey],
-            [
-                'opening_balance' => $balance, // If first snapshot of day, this will be overridden
-                'closing_balance' => $balance,
-                'current_balance' => $balance,
-                'topup_today' => 0,
-            ]
-        );
+        $stat = $networkProfile->stats()->firstOrNew(['date' => $today]);
+        $isFirst = is_null($stat->opening_balance);
 
-        // Opening balance: use earliest snapshot of the day
-        $opening = $networkProfile->snapshots()
-            ->whereDate('taken_at', $dateKey)
-            ->orderBy('taken_at')
-            ->value('balance') ?? $balance;
+        if ($isFirst) {
+            $stat->opening_balance = $balance;
+        }
 
-        $stat->update([
-            'opening_balance' => $opening,
-            'closing_balance' => $balance,
-            'current_balance' => $balance,
-        ]);
+        $stat->closing_balance = $balance;
+        $stat->current_balance = $balance;
+        $stat->save();
+
+        // Sync last existing stat if this is first of the day
+        if ($isFirst) {
+            $lastStat = $networkProfile->stats()
+                ->where('date', '<', $today)
+                ->orderByDesc('date')
+                ->first();
+
+            if ($lastStat && $lastStat->closing_balance != $stat->opening_balance) {
+                $lastStat->closing_balance = $stat->opening_balance;
+                $lastStat->save();
+            }
+        }
 
         return redirect()->route('user.network-profiles.snapshots.index', $networkProfile->id)
             ->with('success', 'Snapshot added successfully and stats updated.');
@@ -200,34 +200,43 @@ class NetworkProfileSnapshotController extends Controller
         ]);
 
         $takenAt = Carbon::parse($snapshot->taken_at);
-        $dateKey = $takenAt->toDateString();
-
-        // Update stats after editing
-        $latestBalance = $networkProfile->snapshots()
-            ->whereDate('taken_at', $dateKey)
-            ->latest('taken_at')
-            ->value('balance') ?? $request->balance;
+        $today = $takenAt->toDateString();
 
         $opening = $networkProfile->snapshots()
-            ->whereDate('taken_at', $dateKey)
+            ->whereDate('taken_at', $today)
             ->orderBy('taken_at')
             ->value('balance') ?? $request->balance;
 
-        $stat = $networkProfile->stats()->firstOrCreate(
-            ['date' => $dateKey],
-            [
-                'opening_balance' => $opening,
-                'closing_balance' => $latestBalance,
-                'current_balance' => $latestBalance,
-                'topup_today' => 0,
-            ]
-        );
+        $latestBalance = $networkProfile->snapshots()
+            ->whereDate('taken_at', $today)
+            ->latest('taken_at')
+            ->value('balance') ?? $request->balance;
 
-        $stat->update([
-            'opening_balance' => $opening,
-            'closing_balance' => $latestBalance,
-            'current_balance' => $latestBalance,
-        ]);
+        $stat = $networkProfile->stats()->firstOrNew(['date' => $today]);
+        $isFirstSnapshotOfDay = !$networkProfile->snapshots()
+            ->whereDate('taken_at', $takenAt->toDateString())
+            ->where('taken_at', '<', $takenAt)
+            ->exists();
+
+        if ($isFirstSnapshotOfDay) {
+            $stat->opening_balance = $opening;
+        }
+
+        $stat->closing_balance = $latestBalance;
+        $stat->current_balance = $latestBalance;
+        $stat->save();
+
+        if ($isFirstSnapshotOfDay) {
+            $lastStat = $networkProfile->stats()
+                ->where('date', '<', $today)
+                ->orderByDesc('date')
+                ->first();
+
+            if ($lastStat && $lastStat->closing_balance != $stat->opening_balance) {
+                $lastStat->closing_balance = $stat->opening_balance;
+                $lastStat->save();
+            }
+        }
 
         return redirect()->route('user.network-profiles.snapshots.index', $networkProfile->id)
             ->with('success', 'Snapshot updated successfully and stats adjusted.');
@@ -238,21 +247,49 @@ class NetworkProfileSnapshotController extends Controller
      */
     public function destroy(NetworkProfile $networkProfile, NetworkProfileSnapshot $snapshot)
     {
-        $dateKey = Carbon::parse($snapshot->taken_at)->toDateString();
+        $takenAt = Carbon::parse($snapshot->taken_at);
+        $dateKey = $takenAt->toDateString();
         $snapshot->delete();
 
-        // Recalculate stats for the day
-        $snapshotsOfDay = $networkProfile->snapshots()
+        $snapshotsToday = $networkProfile->snapshots()
             ->whereDate('taken_at', $dateKey)
             ->orderBy('taken_at')
             ->get();
 
-        if ($snapshotsOfDay->isEmpty()) {
-            // If no more snapshots exist for the day, optionally delete the stat
+        if ($snapshotsToday->isEmpty()) {
+            // Delete the stat for that day
             $networkProfile->stats()->where('date', $dateKey)->delete();
+
+            // ✅ Find the last date BEFORE this snapshot
+            $lastSnapshotBefore = $networkProfile->snapshots()
+                ->where('taken_at', '<', $takenAt)
+                ->orderByDesc('taken_at')
+                ->first();
+
+            // ✅ Find the first snapshot AFTER the deleted one (future day)
+            $firstSnapshotAfter = $networkProfile->snapshots()
+                ->where('taken_at', '>', $takenAt)
+                ->orderBy('taken_at')
+                ->first();
+
+            if ($lastSnapshotBefore) {
+                $lastDate = Carbon::parse($lastSnapshotBefore->taken_at)->toDateString();
+                $stat = $networkProfile->stats()->where('date', $lastDate)->first();
+
+                if ($stat) {
+                    $newClosing = $firstSnapshotAfter
+                        ? $firstSnapshotAfter->balance
+                        : $lastSnapshotBefore->balance;
+
+                    if ($stat->closing_balance != $newClosing) {
+                        $stat->update(['closing_balance' => $newClosing]);
+                    }
+                }
+            }
         } else {
-            $opening = $snapshotsOfDay->first()->balance;
-            $closing = $snapshotsOfDay->last()->balance;
+            // Recalculate for current date (after deletion)
+            $opening = $snapshotsToday->first()->balance;
+            $closing = $snapshotsToday->last()->balance;
 
             $stat = $networkProfile->stats()->firstOrCreate(
                 ['date' => $dateKey],
@@ -269,6 +306,21 @@ class NetworkProfileSnapshotController extends Controller
                 'closing_balance' => $closing,
                 'current_balance' => $closing,
             ]);
+
+            // ✅ Also update previous day's closing (to match new opening)
+            $lastSnapshotBefore = $networkProfile->snapshots()
+                ->where('taken_at', '<', $snapshotsToday->first()->taken_at)
+                ->orderByDesc('taken_at')
+                ->first();
+
+            if ($lastSnapshotBefore) {
+                $lastDate = Carbon::parse($lastSnapshotBefore->taken_at)->toDateString();
+                $prevStat = $networkProfile->stats()->where('date', $lastDate)->first();
+
+                if ($prevStat && $prevStat->closing_balance != $opening) {
+                    $prevStat->update(['closing_balance' => $opening]);
+                }
+            }
         }
 
         return redirect()->route('user.network-profiles.snapshots.index', $networkProfile->id)

@@ -50,6 +50,14 @@
                     </div>
                 </div>
 
+                <!-- Profit Percentage -->
+                <div>
+                    <label for="profit_percentage" class="block text-sm font-medium text-gray-700">Profit Percentage</label>
+                    <input v-model="form.profit_percentage" id="profit_percentage" type="number"
+                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <p v-if="form.errors.profit_percentage" class="text-red-600 text-sm mt-1">{{ form.errors.profit_percentage }}</p>
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="flex flex-col sm:flex-row gap-4 pt-2">
                     <button type="submit"
@@ -81,6 +89,7 @@ const form = useForm({
     email: user.email,
     role: user.roles[0]?.name || 'user',
     status: user.status,
+    profit_percentage: user.profit_percentage,
 });
 
 const submit = () => {

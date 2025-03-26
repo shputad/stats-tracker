@@ -6,8 +6,10 @@ use App\Models\NetworkChannel;
 use App\Models\Link;
 use App\Models\NetworkProfile;
 use App\Models\User;
+use App\Models\DailyProfitOverride;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Carbon;
 
 class AdminController extends Controller
 {
@@ -123,5 +125,128 @@ class AdminController extends Controller
             'selectedUserId' => $userId,
             'users' => User::select('id', 'name')->get(),
         ]);
+    }
+
+    public function dailyProfit(Request $request)
+    {
+        $userId = $request->input('user_id', $request->user()->id);
+        $user = User::findOrFail($userId);
+        $profitPercentage = (float) ($user->profit_percentage ?? 0);
+
+        $profiles = $user->networkProfiles()->with(['link', 'stats'])->get();
+
+        $daily = [];
+
+        foreach ($profiles as $profile) {
+            $link = $profile->link;
+            if (!$link) continue;
+
+            $linkId = $link->id;
+            $linkName = $link->name ?? null;
+            $baseColumn = $link->base_logs_type ?? 'log';
+
+            foreach ($profile->stats as $stat) {
+                $date = $stat->date;
+                $spending = (float) $stat->opening_balance + (float) $stat->topup_today - (float) ($stat->closing_balance ?? $stat->current_balance);
+
+                // Initialize the date row if not exists
+                if (!isset($daily[$date])) {
+                    $daily[$date] = [
+                        'date' => $date,
+                        'spending' => 0,
+                        'cr' => 0,
+                        'links' => [],
+                    ];
+                }
+
+                // Add spending to the date-level
+                $daily[$date]['spending'] += $spending;
+
+                // Calculate logs using first/last
+                $firstLog = \DB::table('link_stats')
+                    ->whereDate('created_at', $date)
+                    ->where('link_id', $linkId)
+                    ->orderBy('created_at')
+                    ->value($baseColumn);
+
+                $lastLog = \DB::table('link_stats')
+                    ->whereDate('created_at', $date)
+                    ->where('link_id', $linkId)
+                    ->orderByDesc('created_at')
+                    ->value($baseColumn);
+
+                $logs = (!is_null($firstLog) && !is_null($lastLog)) ? ($lastLog - $firstLog) : 0;
+
+                if (!isset($daily[$date]['total_logs'])) {
+                    // Add logs to date-level logs
+                    $daily[$date]['total_logs'] = $logs;
+                }
+
+                if (!isset($daily[$date]['links'][$linkId])) {
+                    // Push link row
+                    $daily[$date]['links'][$linkId] = [
+                        'link_id' => $linkId,
+                        'name' => $linkName,
+                        'spending' => $spending,
+                        'logs' => $logs
+                    ];
+                } else {
+                    $daily[$date]['links'][$linkId]['spending'] += $spending;
+                }
+
+                // Fetch CR override
+                $overrideCr = DailyProfitOverride::where('link_id', $linkId)
+                    ->where('date', $date)
+                    ->value('override_cr');
+
+                // Calculate CR for this link
+                $cr = $overrideCr ?? ($daily[$date]['links'][$linkId]['spending'] > 0 ? round($logs / $daily[$date]['links'][$linkId]['spending'], 4) : 0);
+
+                $daily[$date]['links'][$linkId]['cr'] = $cr;
+            }
+        }
+
+        // Finalize CR per date
+        foreach ($daily as &$row) {
+            $linkCRs = array_column($row['links'], 'cr');
+            $linkSpendings = array_column($row['links'], 'spending');
+            $sumOfAllLinksSpendings = array_sum($linkSpendings);
+        
+            // Calculate weighted average CR
+            $weightedCrSum = 0;
+            foreach ($row['links'] as $link) {
+                $weightedCrSum += $link['cr'] * $link['spending'];
+            }
+        
+            $row['cr'] = $sumOfAllLinksSpendings > 0
+                ? round($weightedCrSum / $sumOfAllLinksSpendings, 4)
+                : 0;
+        }
+
+        return Inertia::render('Admin/DailyProfit', [
+            'summary' => collect($daily)->sortByDesc('date')->values()->all(),
+            'users' => User::select('id', 'name')->get(),
+            'selectedUserId' => $userId,
+            'profitPercentage' => $profitPercentage,
+        ]);
+    }
+
+    public function updatedailyProfitOverride(Request $request)
+    {
+        $validated = $request->validate([
+            'link_id' => 'required|exists:links,id',
+            'date' => 'required|date',
+            'override_cr' => 'required|numeric|min:0|max:100',
+        ]);
+
+        DailyProfitOverride::updateOrCreate(
+            [
+                'link_id' => $validated['link_id'],
+                'date' => $validated['date'],
+            ],
+            ['override_cr' => $validated['override_cr']]
+        );
+
+        return redirect()->back()->with('success', 'CR override saved.');
     }
 }

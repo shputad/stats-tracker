@@ -89,6 +89,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('network-profiles/{profile}/stats/{date}/topup', [AdminNetworkProfileStatController::class, 'updateTopup'])->name('network-profiles.stats.updateTopup');
 
     Route::get('/daily-summary', [AdminController::class, 'dailySummary'])->name('daily-summary');
+    Route::get('/daily-profit', [AdminController::class, 'dailyProfit'])->name('daily-profit');
+    Route::post('/daily-profit-override', [AdminController::class, 'updatedailyProfitOverride'])->name('daily-profit.override');
 
     // Profile
     Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
@@ -111,6 +113,7 @@ Route::middleware(['auth', 'role:user'])->name('user.')->group(function () {
 
 
     Route::get('/daily-summary', [UserController::class, 'dailySummary'])->name('daily-summary');
+    Route::get('/daily-profit', [UserController::class, 'dailyProfit'])->name('daily-profit');
     Route::post('/impersonate-leave', [UserController::class, 'leaveImpersonation'])->name('leave-impersonation');
 
     // Profile

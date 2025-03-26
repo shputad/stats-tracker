@@ -121,14 +121,30 @@ class UpdateNetworkProfileSnapshots extends Command
                     'date' => $today,
                 ]);
 
-                if (is_null($stat->opening_balance)) {
+                $isFirstStatToday = is_null($stat->opening_balance);
+
+                if ($isFirstStatToday) {
                     $stat->opening_balance = $balance;
                 }
 
                 $stat->current_balance = $balance;
                 $stat->closing_balance = $balance;
-
                 $stat->save();
+
+                // ✅ Only try syncing with last existing stat (not necessarily yesterday)
+                if ($isFirstStatToday) {
+                    $lastStat = NetworkProfileStat::where('profile_id', $profile->id)
+                        ->where('date', '<', $today)
+                        ->orderByDesc('date')
+                        ->first();
+
+                    if ($lastStat && $lastStat->closing_balance != $stat->opening_balance) {
+                        $lastStat->closing_balance = $stat->opening_balance;
+                        $lastStat->save();
+
+                        Log::info("[{$profile->id}] Closing balance synced for {$lastStat->date} → {$stat->opening_balance}");
+                    }
+                }
 
                 Log::info("[{$profile->id}] Balance recorded: {$balance}");
             } else {
