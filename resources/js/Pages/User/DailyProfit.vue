@@ -49,7 +49,7 @@
                     </thead>
                     <tbody>
                         <template v-for="row in summary" :key="row.date">
-                            <tr @click="toggleExpand(row.date)" class="border-t hover:bg-gray-50 cursor-pointer transition">
+                            <tr @click="toggleExpand(row.date)" v-if="row.spending" class="border-t hover:bg-gray-50 cursor-pointer transition">
                                 <td class="p-3 font-medium text-gray-800">
                                     {{ row.date }}
                                     <i class="fas ml-2" :class="expandedDates.includes(row.date) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
