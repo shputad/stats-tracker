@@ -76,8 +76,14 @@
                                         :title="calculateProfit(row).tooltip"
                                     ></i>
                                 </td>
-                                <td :class="calculateProjectedProfit(row) >= 0 ? 'text-blue-600' : 'text-red-600'" class="p-3 font-semibold">
-                                    {{ formatDecimal(calculateProjectedProfit(row)) }}
+                                <td class="p-3 font-semibold text-gray-500">
+                                    <span
+                                        v-if="row.date === today"
+                                        :class="calculateProjectedProfit(row) >= 0 ? 'text-blue-600' : 'text-red-600'"
+                                    >
+                                        {{ formatDecimal(calculateProjectedProfit(row)) }}
+                                    </span>
+                                    <span v-else class="text-gray-400 italic">–</span>
                                 </td>
                             </tr>
 
@@ -159,7 +165,7 @@ const summary = ref(props.summary || []);
 const selectedUserId = ref(props.selectedUserId || props.auth?.user?.id);
 const isRefreshing = ref(false);
 const profitPercentage = ref(props.profitPercentage || 0);
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString('en-CA');
 
 const updateIntervalMinutes = parseFloat(props.settings?.profile_stats_update_interval || 10);
 const updateIntervalMs = updateIntervalMinutes * 60000;
