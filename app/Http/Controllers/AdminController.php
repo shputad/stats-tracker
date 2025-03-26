@@ -233,7 +233,7 @@ class AdminController extends Controller
 
         return Inertia::render('Admin/DailyProfit', [
             'summary' => collect($daily)->sortByDesc('date')->values()->all(),
-            'users' => User::select('id', 'name')->get(),
+            'users' => User::get(),
             'selectedUserId' => $userId,
             'profitPercentage' => $profitPercentage,
         ]);

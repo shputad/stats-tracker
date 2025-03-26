@@ -59,8 +59,17 @@
                                 <td class="p-3 text-red-600 font-semibold">{{ formatDecimal(row.spending) }}</td>
                                 <td class="p-3 text-indigo-600 font-semibold">{{ row.total_logs }}</td>
                                 <td class="p-3 text-gray-700">{{ formatDecimal(row.cr) }}</td>
-                                <td :class="calculateProfit(row) >= 0 ? 'text-green-700' : 'text-red-600'" class="p-3 font-semibold">
-                                    {{ formatDecimal(calculateProfit(row)) }}
+                                <td
+                                    :class="calculateProfit(row).value >= 0 ? 'text-green-700' : 'text-red-600'"
+                                    class="p-3 font-semibold"
+                                >
+                                    {{ formatDecimal(calculateProfit(row).value) }}
+
+                                    <i
+                                        v-if="calculateProfit(row).hasSpecial"
+                                        class="fas fa-info-circle text-gray-400 ml-1"
+                                        :title="calculateProfit(row).tooltip"
+                                    ></i>
                                 </td>
                                 <td :class="calculateProjectedProfit(row) >= 0 ? 'text-blue-600' : 'text-red-600'" class="p-3 font-semibold">
                                     {{ formatDecimal(calculateProjectedProfit(row)) }}
@@ -159,7 +168,7 @@ const thisMonthProfit = computed(() => {
     return summary.value.reduce((total, row) => {
         const [rowYear, rowMonth] = row.date.split('-').map(Number);
         if (rowYear === year && rowMonth === month) {
-            return total + calculateProfit(row);
+            return total + calculateProfit(row).value;
         }
         return total;
     }, 0);
@@ -173,7 +182,7 @@ const lastMonthProfit = computed(() => {
     return summary.value.reduce((total, row) => {
         const [rowYear, rowMonth] = row.date.split('-').map(Number);
         if (rowYear === year && rowMonth === month) {
-            return total + calculateProfit(row);
+            return total + calculateProfit(row).value;
         }
         return total;
     }, 0);
@@ -274,7 +283,7 @@ const deleteCrOverride = (date, link_id) => {
                         const weightedCr = Object.values(row.links).reduce((sum, l) => sum + (l.cr * l.spending), 0);
                         row.cr = totalSpending > 0 ? +(weightedCr / totalSpending).toFixed(4) : 0;
 
-                        row.profit = calculateProfit(row);
+                        row.profit = calculateProfit(row).value;
                     }
                 }
             });
@@ -285,14 +294,43 @@ const deleteCrOverride = (date, link_id) => {
 const formatDecimal = (val) => val !== null ? parseFloat(val).toFixed(2) : '0.00';
 
 const calculateProfit = (row) => {
-    const profit = ((row.spending * row.cr) - row.spending) * (profitPercentage.value / 100);
-    return parseFloat(profit.toFixed(2));
+    const baseProfit = ((row.spending * row.cr) - row.spending);
+
+    const selectedUser = users.find(u => u.id === parseInt(selectedUserId.value));
+    const percentage = selectedUser?.profit_percentage ?? 0;
+    const minCap = selectedUser?.min_daily_profit_cap ?? null;
+    const specialPercent = selectedUser?.special_profit_percentage ?? null;
+
+    let profit = baseProfit * (percentage / 100);
+    let tooltip = `Total Average Profit: ${formatDecimal(baseProfit)}`;
+    tooltip += `\nBase: ${formatDecimal(baseProfit)} × ${percentage}% = ${formatDecimal(profit)}`;
+    let hasSpecial = false;
+
+    if (minCap && specialPercent && profit < minCap) {
+        const specialProfit = baseProfit * (specialPercent / 100);
+        const cappedProfit = specialProfit > minCap ? minCap : specialProfit;
+
+        tooltip += `\nSpecial: ${formatDecimal(baseProfit)} × ${specialPercent}% = ${formatDecimal(specialProfit)}`;
+
+        if (specialProfit > minCap) {
+            tooltip += `\nCapped to: ${minCap}`;
+        }
+
+        profit = cappedProfit;
+        hasSpecial = true;
+    }
+
+    return {
+        value: parseFloat(profit.toFixed(2)),
+        tooltip,
+        hasSpecial,
+    };
 };
 
 const calculateProjectedProfit = (row) => {
-    if (row.date !== today) return calculateProfit(row);
+    if (row.date !== today) return calculateProfit(row).value;
     const hoursPassed = new Date().getHours() + (new Date().getMinutes() / 60);
-    return hoursPassed === 0 ? 0 : parseFloat((calculateProfit(row) / hoursPassed * 24).toFixed(2));
+    return hoursPassed === 0 ? 0 : parseFloat((calculateProfit(row).value / hoursPassed * 24).toFixed(2));
 };
 
 const calculateLinkProfit = (link) => {

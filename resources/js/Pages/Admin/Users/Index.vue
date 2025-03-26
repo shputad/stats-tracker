@@ -39,7 +39,16 @@
                                     {{ user.roles[0] ? user.roles[0].name.charAt(0).toUpperCase() + user.roles[0].name.slice(1) : 'No Role' }}
                                 </span>
                             </td>
-                            <td class="p-3 text-center">{{ user.profit_percentage }}%</td>
+                            <td class="p-3 text-center">
+                                <span v-if="user.min_daily_profit_cap"
+                                    class="relative group cursor-pointer">
+                                    {{ user.profit_percentage }}%
+                                    <i class="fas fa-info-circle text-gray-400 ml-1" :title="`If profit &lt; ${user.min_daily_profit_cap}, apply ${user.special_profit_percentage}%`"></i>
+                                </span>
+                                <span v-else class="text-gray-800 font-semibold">
+                                    {{ user.profit_percentage }}%
+                                </span>
+                            </td>
                             <td class="p-3 text-center">
                                 <span :class="[
                                     'px-2 py-1 rounded text-xs font-bold',

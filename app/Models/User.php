@@ -22,7 +22,9 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
-        'profit_percentage'
+        'profit_percentage',
+        'min_daily_profit_cap',
+        'special_profit_percentage'
     ];
 
     /**

@@ -65,12 +65,38 @@
                     </div>
                 </div>
 
-                <!-- Profit Percentage -->
-                <div>
-                    <label for="profit_percentage" class="block text-sm font-medium text-gray-700">Profit Percentage</label>
-                    <input v-model="form.profit_percentage" id="profit_percentage" type="number"
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <!-- Profit Percentage -->
+                    <div class="flex-1">
+                        <label for="profit_percentage" class="block text-sm font-medium text-gray-700">Profit Percentage</label>
+                        <input v-model="form.profit_percentage" id="profit_percentage" type="number"
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.profit_percentage" class="text-red-600 text-sm mt-1">{{ form.errors.profit_percentage }}</p>
+                    </div>
+
+                    <!-- Min Daily Profit Cap -->
+                    <div class="flex-1">
+                        <label for="min_daily_profit_cap" class="block text-sm font-medium text-gray-700">
+                            Min Daily Profit Cap (optional)
+                        </label>
+                        <input v-model="form.min_daily_profit_cap" id="min_daily_profit_cap" type="number"
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.min_daily_profit_cap" class="text-red-600 text-sm mt-1">
+                            {{ form.errors.min_daily_profit_cap }}
+                        </p>
+                    </div>
+                </div>
+
+                 <!-- Special Profit Percentage (shown only if cap is set) -->
+                 <div v-if="form.min_daily_profit_cap">
+                    <label for="special_profit_percentage" class="block text-sm font-medium text-gray-700">
+                        Special Profit % (if cap not met)
+                    </label>
+                    <input v-model="form.special_profit_percentage" id="special_profit_percentage" type="number"
                         class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
-                    <p v-if="form.errors.profit_percentage" class="text-red-600 text-sm mt-1">{{ form.errors.profit_percentage }}</p>
+                    <p v-if="form.errors.special_profit_percentage" class="text-red-600 text-sm mt-1">
+                        {{ form.errors.special_profit_percentage }}
+                    </p>
                 </div>
 
                 <!-- Action Buttons -->
@@ -102,6 +128,8 @@ const form = useForm({
     role: 'user',
     status: '',
     profit_percentage: '',
+    min_daily_profit_cap: '',
+    special_profit_percentage: '',
 });
 
 const submit = () => {
