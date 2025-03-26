@@ -4,7 +4,12 @@
         <div class="mx-auto max-w-7xl">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Daily Profit</h1>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Daily Profit</h1>
+                    <p v-if="remainingTime > 0" class="text-sm text-gray-500 mt-1">
+                        Next auto-refresh in: <span class="font-semibold">{{ formattedRemainingTime }}</span>
+                    </p>
+                </div>
                 <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                     <div>
                         <label class="text-sm font-medium text-gray-700 block mb-1">Select User</label>
@@ -145,7 +150,7 @@
 <script setup>
 import { Head, usePage, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import Swal from 'sweetalert2';
 
 const { props } = usePage();
@@ -155,6 +160,11 @@ const selectedUserId = ref(props.selectedUserId || props.auth?.user?.id);
 const isRefreshing = ref(false);
 const profitPercentage = ref(props.profitPercentage || 0);
 const today = new Date().toISOString().slice(0, 10);
+
+const updateIntervalMinutes = parseFloat(props.settings?.profile_stats_update_interval || 10);
+const updateIntervalMs = updateIntervalMinutes * 60000;
+const nextRefreshTime = ref(null);
+const remainingTime = ref(0);
 
 const expandedDates = ref([]);
 const editingCR = reactive({});
@@ -293,6 +303,12 @@ const deleteCrOverride = (date, link_id) => {
 
 const formatDecimal = (val) => val !== null ? parseFloat(val).toFixed(2) : '0.00';
 
+const formattedRemainingTime = computed(() => {
+    const minutes = Math.floor(remainingTime.value / 60000);
+    const seconds = Math.floor((remainingTime.value % 60000) / 1000);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+});
+
 const calculateProfit = (row) => {
     const baseProfit = ((row.spending * row.cr) - row.spending);
 
@@ -354,6 +370,50 @@ const refreshSummary = () => {
 };
 
 const onUserChange = () => refreshSummary();
+
+const computeFirstRefreshDelay = () => {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const remainder = minutes % updateIntervalMinutes;
+    const nextFull = new Date(now);
+    if (remainder === 0) {
+        nextFull.setSeconds(0, 0);
+    } else {
+        nextFull.setMinutes(minutes + (updateIntervalMinutes - remainder), 0, 0);
+    }
+    return nextFull.getTime() + 60000 - now.getTime(); // +1 min offset
+};
+
+const updateRemainingTime = () => {
+    if (nextRefreshTime.value) {
+        remainingTime.value = nextRefreshTime.value - Date.now();
+        if (remainingTime.value < 0) remainingTime.value = 0;
+    }
+};
+
+let initialTimeout, refreshInterval, remainingTimer;
+
+onMounted(() => {
+    const firstDelay = computeFirstRefreshDelay();
+    nextRefreshTime.value = new Date(Date.now() + firstDelay);
+    updateRemainingTime();
+    remainingTimer = setInterval(updateRemainingTime, 1000);
+
+    initialTimeout = setTimeout(() => {
+        refreshSummary();
+        nextRefreshTime.value = new Date(Date.now() + updateIntervalMs);
+        refreshInterval = setInterval(() => {
+            refreshSummary();
+            nextRefreshTime.value = new Date(Date.now() + updateIntervalMs);
+        }, updateIntervalMs);
+    }, firstDelay);
+});
+
+onUnmounted(() => {
+    clearTimeout(initialTimeout);
+    clearInterval(refreshInterval);
+    clearInterval(remainingTimer);
+});
 </script>
 <style scoped>
 .mt-2.sm\:mt-6 {

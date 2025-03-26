@@ -6,6 +6,7 @@ use App\Models\NetworkChannel;
 use App\Models\Link;
 use App\Models\NetworkProfile;
 use App\Models\User;
+use App\Models\Setting;
 use App\Models\DailyProfitOverride;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -119,11 +120,14 @@ class AdminController extends Controller
 
         $summary = collect($dailyStats)->sortByDesc('date')->values()->all();
 
+        $updateInterval = Setting::where('key', 'profile_stats_update_interval')->value('value') ?? 10;
+
         return Inertia::render('Admin/DailySummary', [
             'summary' => $summary,
             'profilesByDate' => $dailyProfiles,
             'selectedUserId' => $userId,
             'users' => User::select('id', 'name')->get(),
+            'settings' => ['profile_stats_update_interval' => $updateInterval]
         ]);
     }
 
@@ -231,11 +235,14 @@ class AdminController extends Controller
             $row['cr'] = $sumSpending > 0 ? round($weightedCrSum / $sumSpending, 4) : 0;
         }
 
+        $updateInterval = Setting::where('key', 'profile_stats_update_interval')->value('value') ?? 10;
+
         return Inertia::render('Admin/DailyProfit', [
             'summary' => collect($daily)->sortByDesc('date')->values()->all(),
             'users' => User::get(),
             'selectedUserId' => $userId,
             'profitPercentage' => $profitPercentage,
+            'settings' => ['profile_stats_update_interval' => $updateInterval]
         ]);
     }
 
