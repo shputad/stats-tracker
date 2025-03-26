@@ -204,8 +204,17 @@ class AdminController extends Controller
                     ->where('date', $date)
                     ->value('override_cr');
 
-                $cr = $overrideCr ?? ($totalLinkSpending > 0 ? round($logs / $totalLinkSpending, 4) : 0);
+                $dynamic_cr = $totalLinkSpending > 0 ? round($logs / $totalLinkSpending, 4) : 0;
+
+                $daily[$date]['links'][$linkId]['dynamic_cr'] = $dynamic_cr;
+
+                $cr = $overrideCr ?? $dynamic_cr;
+
                 $daily[$date]['links'][$linkId]['cr'] = $cr;
+
+                if ($overrideCr) {
+                    $daily[$date]['links'][$linkId]['override_cr'] = $overrideCr;
+                }
             }
         }
 
@@ -230,7 +239,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function updatedailyProfitOverride(Request $request)
+    public function updateDailyProfitOverride(Request $request)
     {
         $validated = $request->validate([
             'link_id' => 'required|exists:links,id',
@@ -247,5 +256,19 @@ class AdminController extends Controller
         );
 
         return redirect()->back()->with('success', 'CR override saved.');
+    }
+
+    public function deleteDailyProfitOverride(Request $request)
+    {
+        $validated = $request->validate([
+            'link_id' => 'required|exists:links,id',
+            'date' => 'required|date',
+        ]);
+
+        DailyProfitOverride::where('link_id', $validated['link_id'])
+            ->where('date', $validated['date'])
+            ->delete();
+
+        return redirect()->back()->with('success', 'Ok.');
     }
 }

@@ -90,7 +90,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/daily-summary', [AdminController::class, 'dailySummary'])->name('daily-summary');
     Route::get('/daily-profit', [AdminController::class, 'dailyProfit'])->name('daily-profit');
-    Route::post('/daily-profit-override', [AdminController::class, 'updatedailyProfitOverride'])->name('daily-profit.override');
+    Route::post('/daily-profit/override', [AdminController::class, 'updateDailyProfitOverride'])->name('daily-profit.override.update');
+    Route::delete('/daily-profit/override', [AdminController::class, 'deleteDailyProfitOverride'])->name('daily-profit.override.delete');
 
     // Profile
     Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');

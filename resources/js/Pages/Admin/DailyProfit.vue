@@ -89,13 +89,24 @@
                                                     <div v-if="!editingCR[`${row.date}-${link.link_id}`]" class="w-4 flex items-center gap-2">
                                                         <span>{{ formatDecimal(link.cr) }}</span>
                                                         <i class="fas fa-pencil-alt text-gray-400 hover:text-gray-600 cursor-pointer"
-                                                           @click="enableCrEdit(row.date, link.link_id, link.cr)"></i>
+                                                        @click="enableCrEdit(row.date, link.link_id, link.cr)"></i>
+
+                                                        <!-- If override exists, show remove option -->
+                                                        <i v-if="link.override_cr"
+                                                            class="fas fa-times-circle text-red-600 cursor-pointer"
+                                                            title="Remove CR Override"
+                                                            @click="deleteCrOverride(row.date, link.link_id)"></i>
                                                     </div>
-                                                    <div v-else class="w-4 flex items-center gap-2 absolute inset-0">
-                                                        <input type="number" step="0.0001" class="w-20 px-2 py-1 border rounded text-sm"
+
+                                                    <div v-else class="w-4 flex items-center gap-2 absolute inset-0 bg-white">
+                                                        <input type="number" step="0.0001"
+                                                            class="w-20 px-2 py-1 border rounded text-sm"
                                                             v-model.number="crInputs[`${row.date}-${link.link_id}`]" />
                                                         <button @click="saveCrOverride(row.date, link.link_id)" class="text-green-600">
                                                             <i class="fas fa-check-circle text-xl"></i>
+                                                        </button>
+                                                        <button @click="cancelCrEdit(row.date, link.link_id)" class="text-orange-600">
+                                                            <i class="fas fa-times-circle text-xl"></i>
                                                         </button>
                                                     </div>
                                                 </td>
@@ -126,6 +137,7 @@
 import { Head, usePage, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { ref, reactive, computed } from 'vue';
+import Swal from 'sweetalert2';
 
 const { props } = usePage();
 const users = props.users || [];
@@ -190,7 +202,7 @@ const saveCrOverride = (date, link_id) => {
     overrideForm.link_id = link_id;
     overrideForm.override_cr = crInputs[key];
 
-    overrideForm.post(route('admin.daily-profit.override'), {
+    overrideForm.post(route('admin.daily-profit.override.update'), {
         preserveScroll: true,
         onSuccess: () => {
             const summaryRow = summary.value.find(r => r.date === date);
@@ -199,6 +211,7 @@ const saveCrOverride = (date, link_id) => {
 
             // Update CR for this link
             linkRow.cr = overrideForm.override_cr;
+            linkRow.override_cr = overrideForm.override_cr;
 
             // Recalculate this link's profit
             linkRow.profit = calculateLinkProfit(linkRow);
@@ -221,6 +234,50 @@ const saveCrOverride = (date, link_id) => {
                 : calculateProfit(summaryRow);
 
             editingCR[key] = false;
+        }
+    });
+};
+
+const cancelCrEdit = (date, link_id) => {
+    const key = `${date}-${link_id}`;
+    editingCR[key] = false;
+    delete crInputs[key];
+};
+
+const deleteCrOverride = (date, link_id) => {
+    Swal.fire({
+        title: 'Remove CR override?',
+        text: "This will delete the custom CR and use default logs-based CR.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#2563eb',
+        cancelButtonColor: '#6b7280',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.daily-profit.override.delete'), {
+                data: { date, link_id },
+                preserveScroll: true,
+                onSuccess: () => {
+                    const row = summary.value.find(r => r.date === date);
+                    if (!row) return;
+
+                    const link = row.links[link_id];
+                    if (link) {
+                        delete link.override_cr;
+
+                        link.cr = link.dynamic_cr;
+                        link.profit = calculateLinkProfit(link);
+
+                        const totalSpending = Object.values(row.links).reduce((sum, l) => sum + l.spending, 0);
+                        const weightedCr = Object.values(row.links).reduce((sum, l) => sum + (l.cr * l.spending), 0);
+                        row.cr = totalSpending > 0 ? +(weightedCr / totalSpending).toFixed(4) : 0;
+
+                        row.profit = calculateProfit(row);
+                    }
+                }
+            });
         }
     });
 };
