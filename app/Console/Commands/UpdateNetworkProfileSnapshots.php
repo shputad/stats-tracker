@@ -63,6 +63,8 @@ class UpdateNetworkProfileSnapshots extends Command
                     $token = $this->getBidvertiserToken($username, $password, $profile->id);
                     if (!$token) continue 2;
 
+                    usleep(800000);
+
                     $balance = $this->fetchBidvertiserBalance($token, $apiKey);
                     break;
 
@@ -196,12 +198,13 @@ class UpdateNetworkProfileSnapshots extends Command
             $json = $response->json();
             $balance = $json['BDV_API']['RESULTS']['BALANCE']['AMOUNT'] ?? null;
     
-            if (is_null($balance)) {
-                Log::warning("Balance structure missing or invalid", [
-                    'token' => $token,
-                    'apiKey' => substr($apiKey, 0, 8) . '...',
-                    'response' => $json
-                ]);
+            if (is_null($balance) && isset($json['BDV_API']['ERROR']['NOTE']) &&
+                str_contains($json['BDV_API']['ERROR']['NOTE'], 'Multithreaded')) {
+
+                Log::info('Retrying balance fetch after delay due to multithreading warning');
+                sleep(1);
+
+                return $this->fetchBidvertiserBalance($token, $apiKey); // One retry
             }
     
             return $balance;
