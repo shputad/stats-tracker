@@ -165,8 +165,21 @@ class UpdateNetworkProfileSnapshots extends Command
         ])->post('https://my.bidvertiser.com/bdv/bidvertiser/api/adv/TOKEN/');
 
         if ($response->successful()) {
-            return $response->json()['BDV_API']['AUTHORIZATION_TOKEN'] ?? null;
+            $token = $response->json()['BDV_API']['AUTHORIZATION_TOKEN'] ?? null;
+
+            if (!$token) {
+                Log::warning("[{$profileId}] Token structure missing AUTHORIZATION_TOKEN", [
+                    'response' => $response->json()
+                ]);
+            }
+
+            return $token;
         }
+
+        Log::error("[{$profileId}] Failed to fetch BidVertiser token", [
+            'status' => $response->status(),
+            'response' => $response->json()
+        ]);
 
         return null;
     }
@@ -178,13 +191,29 @@ class UpdateNetworkProfileSnapshots extends Command
             'api_key' => $apiKey,
             'Accept' => 'application/json'
         ])->get('https://my.bidvertiser.com/bdv/bidvertiser/api/adv/BALANCE/');
-
+    
         if ($response->successful()) {
-            return $response->json()['BDV_API']['RESULTS']['BALANCE']['AMOUNT'] ?? null;
+            $json = $response->json();
+            $balance = $json['BDV_API']['RESULTS']['BALANCE']['AMOUNT'] ?? null;
+    
+            if (is_null($balance)) {
+                Log::warning("Balance structure missing or invalid", [
+                    'token' => $token,
+                    'apiKey' => substr($apiKey, 0, 8) . '...',
+                    'response' => $json
+                ]);
+            }
+    
+            return $balance;
         }
-
+    
+        Log::error("BidVertiser balance API call failed", [
+            'status' => $response->status(),
+            'response' => $response->json()
+        ]);
+    
         return null;
-    }
+    }    
 
     private function getGalaksionToken(string $email, string $password, int $profileId): ?string
     {

@@ -210,7 +210,7 @@ class UpdateLinkStats extends Command
 
         // Fallback: call the Cloud Run API if the original request failed or did not yield a logs count
         try {
-            $response = Http::timeout(180)->post($cloudRunUrl, [
+            $response = Http::timeout(180)->post(rtrim($cloudRunUrl, '/') . '/fetch-logs', [
                 'url' => $link->url,
                 'api_key' => $apiKey,
                 'link_type' => $link->type,
