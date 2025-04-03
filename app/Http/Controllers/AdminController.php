@@ -303,6 +303,19 @@ class AdminController extends Controller
                 $daily[$date]['spending_interval'] = $spendingInterval;
                 $daily[$date]['last_logs'] = $logsDiff;
                 $daily[$date]['logs_interval'] = $logsInterval;
+
+                $spendingSnapshots = $profile->snapshots->sortByDesc('taken_at')->values();
+                $lastSnap = $spendingSnapshots->get(0);
+                $prevSnap = $spendingSnapshots->get(1);
+
+                // Set oldest snapshot (for spending)
+                if (!isset($daily[$date]['oldest_snapshot_time']) || $lastSnap?->taken_at < $daily[$date]['oldest_snapshot_time']) {
+                    $daily[$date]['oldest_snapshot_time'] = $lastSnap?->taken_at;
+                }
+
+                if (!isset($daily[$date]['latest_log_time']) || $logLatest?->created_at > $daily[$date]['latest_log_time']) {
+                    $daily[$date]['latest_log_time'] = $logLatest?->created_at;
+                }
             }
         }
 
@@ -317,6 +330,13 @@ class AdminController extends Controller
             }
 
             $row['cr'] = $sumSpending > 0 ? round($weightedCrSum / $sumSpending, 4) : 0;
+
+            if (!empty($row['oldest_snapshot_time'])) {
+                $row['oldest_snapshot_time'] = Carbon::parse($row['oldest_snapshot_time'])->diffForHumans();
+            }
+            if (!empty($row['latest_log_time'])) {
+                $row['latest_log_time'] = Carbon::parse($row['latest_log_time'])->diffForHumans();
+            }
         }
 
         $updateInterval = Setting::where('key', 'profile_stats_update_interval')->value('value') ?? 10;
