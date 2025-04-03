@@ -26,7 +26,7 @@ class NetworkProfileController extends Controller
         }
 
         $profiles = $query->with('networkChannel', 'link', 'user')
-            ->orderByDesc('id')
+            ->orderBy('id')
             ->paginate(25)
             ->withQueryString();
 
