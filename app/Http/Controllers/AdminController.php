@@ -39,12 +39,20 @@ class AdminController extends Controller
         $dailyProfiles = [];
     
         foreach ($profiles as $profile) {
-            $latestSnapshot = $profile->snapshots->first();
+            $snapshots = $profile->snapshots->sortByDesc('taken_at')->values();
+            $latestSnapshot = $snapshots->get(0);
+            $previousSnapshot = $snapshots->get(1);
+            
             $latestUpdateAt = optional($latestSnapshot)->taken_at;
-            $latest10MinSnapshot = $profile->snapshots
-                ->where('taken_at', '>=', now()->subMinutes(10))
-                ->sortBy('taken_at')
-                ->first();
+            $interval = $latestSnapshot && $previousSnapshot
+                ? Carbon::parse($latestSnapshot->taken_at)->diffForHumans($previousSnapshot->taken_at, [
+                    'parts' => 1, 'join' => true, 'syntax' => Carbon::DIFF_ABSOLUTE
+                ])
+                : null;
+            
+            $lastSpending = $previousSnapshot && $latestSnapshot
+                ? max(0, $previousSnapshot->balance - $latestSnapshot->balance)
+                : 0;            
     
             foreach ($profile->stats as $stat) {
                 $date = $stat->date;
@@ -57,25 +65,16 @@ class AdminController extends Controller
                         'topup_today' => 0,
                         'closing_balance' => 0,
                         'total_logs' => 0,
-                        'last_10m_spending' => 0,
-                        'last_update_at' => null,
+                        'last_spending' => 0,
+                        'last_update_ago' => null,
+                        'spending_interval' => null,
                     ];
                 }
     
-                $dailyStats[$date]['opening_balance'] += $stat->opening_balance;
-                $dailyStats[$date]['topup_today'] += $stat->topup_today;
-                $dailyStats[$date]['closing_balance'] += $stat->closing_balance ?? $stat->current_balance;
-    
-                if ($latestSnapshot && Carbon::parse(optional($latestSnapshot)->taken_at)->toDateString() === $date) {
-                    $dailyStats[$date]['last_update_at'] = Carbon::parse($latestSnapshot->taken_at)->diffForHumans();
-                }
-    
-                if ($latest10MinSnapshot && Carbon::parse(optional($latest10MinSnapshot)->taken_at)->toDateString() === $date) {
-                    $balanceThen = $latest10MinSnapshot->balance;
-                    $nowBalance = optional($latestSnapshot)->balance;
-                    $dailyStats[$date]['last_10m_spending'] += ($balanceThen > $nowBalance) ? ($balanceThen - $nowBalance) : 0;
-                }
-    
+                $dailyStats[$date]['last_update_ago'] = Carbon::parse($latestSnapshot?->taken_at)?->diffForHumans();
+                $dailyStats[$date]['last_spending'] += $lastSpending;
+                $dailyStats[$date]['spending_interval'] = $interval;
+
                 $dailyProfiles[$date][] = [
                     'profile_id' => $profile->id,
                     'channel' => $profile->networkChannel->name,
@@ -83,10 +82,9 @@ class AdminController extends Controller
                     'opening_balance' => $stat->opening_balance,
                     'topup_today' => $stat->topup_today,
                     'closing_balance' => $stat->closing_balance ?? $stat->current_balance,
-                    'last_update_at' => Carbon::parse(optional($latestSnapshot)->taken_at)?->diffForHumans(),
-                    'last_10m_spending' => $latest10MinSnapshot && $latestSnapshot
-                        ? max(0, $latest10MinSnapshot->balance - $latestSnapshot->balance)
-                        : 0,
+                    'last_update_at' => Carbon::parse($latestSnapshot?->taken_at)?->diffForHumans(),
+                    'last_spending' => $lastSpending,
+                    'spending_interval' => $interval,
                 ];
             }
         }
@@ -135,8 +133,9 @@ class AdminController extends Controller
                     'topup_today' => 0,
                     'closing_balance' => 0,
                     'total_logs' => 0,
-                    'last_10m_spending' => 0,
-                    'last_update_at' => null,
+                    'last_spending' => 0,
+                    'last_update_ago' => null,
+                    'spending_interval' => null,
                 ];
             }
     
