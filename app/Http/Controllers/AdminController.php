@@ -42,8 +42,6 @@ class AdminController extends Controller
             $snapshots = $profile->snapshots->sortByDesc('taken_at')->values();
             $latestSnapshot = $snapshots->get(0);
             $previousSnapshot = $snapshots->get(1);
-            
-            $latestUpdateAt = optional($latestSnapshot)->taken_at;
             $interval = $latestSnapshot && $previousSnapshot
                 ? Carbon::parse($latestSnapshot->taken_at)->diffForHumans($previousSnapshot->taken_at, [
                     'parts' => 1, 'join' => true, 'syntax' => Carbon::DIFF_ABSOLUTE
@@ -52,7 +50,7 @@ class AdminController extends Controller
             
             $lastSpending = $previousSnapshot && $latestSnapshot
                 ? max(0, $previousSnapshot->balance - $latestSnapshot->balance)
-                : 0;            
+                : 0;
     
             foreach ($profile->stats as $stat) {
                 $date = $stat->date;
@@ -66,12 +64,21 @@ class AdminController extends Controller
                         'closing_balance' => 0,
                         'total_logs' => 0,
                         'last_spending' => 0,
-                        'last_update_ago' => null,
+                        'oldest_update_ago' => null,
                         'spending_interval' => null,
                     ];
                 }
-    
-                $dailyStats[$date]['last_update_ago'] = Carbon::parse($latestSnapshot?->taken_at)?->diffForHumans();
+
+                if (!isset($dailyStats[$date]['oldest_update_ago'])) {
+                    $dailyStats[$date]['oldest_update_ago'] = $latestSnapshot?->taken_at;
+                } else if (strtotime($dailyStats[$date]['oldest_update_ago']) > strtotime($latestSnapshot?->taken_at)) {
+                    $dailyStats[$date]['oldest_update_ago'] = $latestSnapshot?->taken_at;
+                }
+
+                if (isset($dailyStats[$date]['oldest_update_ago']) && $dailyStats[$date]['oldest_update_ago']) {
+                    $dailyStats[$date]['oldest_update_ago'] = Carbon::parse($dailyStats[$date]['oldest_update_ago'])->diffForHumans();
+                }
+
                 $dailyStats[$date]['last_spending'] += $lastSpending;
                 $dailyStats[$date]['spending_interval'] = $interval;
 
@@ -134,7 +141,7 @@ class AdminController extends Controller
                     'closing_balance' => 0,
                     'total_logs' => 0,
                     'last_spending' => 0,
-                    'last_update_ago' => null,
+                    'oldest_update_ago' => null,
                     'spending_interval' => null,
                 ];
             }
@@ -283,7 +290,12 @@ class AdminController extends Controller
                     $spendingDiff = max(0, $prevSnap->balance - $lastSnap->balance);
                 }
 
-                $daily[$date]['last_spending'] = $spendingDiff;
+                if (isset($daily[$date]['last_spending'])) {
+                    $daily[$date]['last_spending'] += $spendingDiff;
+                } else {
+                    $daily[$date]['last_spending'] = $spendingDiff;
+                }
+
                 $daily[$date]['spending_interval'] = $spendingInterval;
                 $daily[$date]['last_logs'] = $logsDiff;
                 $daily[$date]['logs_interval'] = $logsInterval;

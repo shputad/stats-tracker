@@ -46,9 +46,9 @@
                                 @click="toggleExpand(row.date)">
                                 <td class="p-3 font-medium text-gray-800 whitespace-nowrap">
                                     {{ row.date }}
-                                    <i v-if="row.date === today && row.last_update_ago && row.spending_interval"
+                                    <i v-if="row.date === today && row.oldest_update_ago && row.spending_interval"
                                         class="fas fa-info-circle text-gray-400 ml-1"
-                                        :title="`Spent $${formatDecimal(row.last_spending)} in ${row.spending_interval}. Latest update: ${row.last_update_ago}`">
+                                        :title="`Spent $${formatDecimal(row.last_spending)} in ${row.spending_interval}. Oldest update: ${row.oldest_update_ago}`">
                                     </i>
                                     <i :class="[
                                         'fas ml-2 transition-transform duration-300',
