@@ -4,14 +4,24 @@
     <AdminLayout>
         <div class="mx-auto">
             <!-- Header -->
-            <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">All Network Profiles</h1>
-                <Link
-                    :href="route('admin.network-profiles.create')"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md shadow hover:bg-blue-700 transition"
-                >
-                    + Create Profile
-                </Link>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">All Network Profiles</h1>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">Select User</label>
+                        <select v-model.number="selectedUserId" @change="onUserChange"
+                            class="text-sm border border-gray-300 rounded px-2 py-1 w-56 shadow-sm">
+                            <option value="all">All Users</option>
+                            <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
+                        </select>
+                    </div>
+                    <Link :href="route('admin.network-profiles.create')"
+                        class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md shadow hover:bg-blue-700 transition mt-2 sm:mt-6">
+                        + Create Profile
+                    </Link>
+                </div>
             </div>
 
             <!-- Table -->
@@ -31,7 +41,7 @@
                     </thead>
                     <tbody>
                         <tr
-                            v-for="profile in profiles"
+                            v-for="profile in profiles.data"
                             :key="profile.id"
                             class="border-t hover:bg-gray-50 transition"
                         >
@@ -119,6 +129,8 @@ import Swal from 'sweetalert2';
 
 const { props } = usePage();
 const profiles = ref(props.profiles);
+const users = props.users || [];
+const selectedUserId = ref(props.selectedUserId || props.auth?.user?.id);
 
 const copyToClipboard = (text) => {
     if (!text) return;
@@ -161,5 +173,17 @@ const deleteProfile = async (id) => {
             },
         });
     }
+};
+
+const onUserChange = () => {
+    router.visit(window.location.pathname, {
+        method: 'get',
+        data: { user_id: selectedUserId.value },
+        preserveScroll: true,
+        replace: true,
+        onSuccess: (page) => {
+            profiles.value = page.props.profiles || [];
+        },
+    });
 };
 </script>

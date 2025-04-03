@@ -15,10 +15,25 @@ class NetworkProfileController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $userId = $request->input('user_id', $request->user()->id);
+
+        $query = NetworkProfile::query();
+
+        if ($userId && $userId !== 'all') {
+            $query->where('user_id', $userId);
+        }
+
+        $profiles = $query->with('networkChannel', 'link', 'user')
+            ->orderByDesc('id')
+            ->paginate(25)
+            ->withQueryString();
+
         return Inertia::render('Admin/NetworkProfiles/Index', [
-            'profiles' => NetworkProfile::with('networkChannel', 'link', 'user')->get(),
+            'profiles' => $profiles,
+            'users' => User::get(),
+            'selectedUserId' => $userId,
         ]);
     }
 
