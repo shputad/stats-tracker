@@ -159,103 +159,65 @@ class AdminController extends Controller
         $userId = $request->input('user_id', $request->user()->id);
         $user = User::findOrFail($userId);
         $profitPercentage = (float) ($user->profit_percentage ?? 0);
-    
-        $profiles = $user->networkProfiles()->with(['link', 'stats', 'snapshots' => function ($q) {
-            $q->latest();
-        }])->get();
-    
+
+        $profiles = $user->networkProfiles()->with(['link', 'stats'])->get();
+
         $daily = [];
-    
+
         foreach ($profiles as $profile) {
             $link = $profile->link;
             if (!$link) continue;
-    
+
             $linkId = $link->id;
             $linkName = $link->name ?? null;
             $baseColumn = $link->base_logs_type ?? 'log';
-    
-            $snapshots = $profile->snapshots->sortByDesc('taken_at')->values();
-            $latestSnapshot = $snapshots->get(0);
-            $previousSnapshot = $snapshots->get(1);
-    
-            $interval = $latestSnapshot && $previousSnapshot
-                ? Carbon::parse($latestSnapshot->taken_at)->diffForHumans($previousSnapshot->taken_at, [
-                    'parts' => 1, 'join' => true, 'syntax' => Carbon::DIFF_ABSOLUTE
-                ])
-                : null;
-    
-            $lastSpending = $previousSnapshot && $latestSnapshot
-                ? max(0, $previousSnapshot->balance - $latestSnapshot->balance)
-                : 0;
-    
-            $lastLogs = $previousSnapshot && $latestSnapshot && isset($previousSnapshot->logs, $latestSnapshot->logs)
-                ? max(0, $previousSnapshot->logs - $latestSnapshot->logs)
-                : 0;
-    
+
             foreach ($profile->stats as $stat) {
                 $date = $stat->date;
                 $userSpending = (float) $stat->opening_balance + (float) $stat->topup_today - (float) ($stat->closing_balance ?? $stat->current_balance);
-    
+
+                // Initialize the date row
                 if (!isset($daily[$date])) {
                     $daily[$date] = [
                         'date' => $date,
                         'spending' => 0,
                         'cr' => 0,
                         'links' => [],
-                        'total_logs' => 0,
-                        'last_spending' => 0,
-                        'last_logs' => 0,
-                        'last_update_ago' => null,
-                        'last_interval' => null,
                     ];
                 }
-    
+
                 $daily[$date]['spending'] += $userSpending;
-    
+
                 // Global logs for this link & date
                 $firstLog = \DB::table('link_stats')
                     ->whereDate('created_at', $date)
                     ->where('link_id', $linkId)
                     ->orderBy('created_at')
                     ->value($baseColumn);
-    
+
                 $lastLog = \DB::table('link_stats')
                     ->whereDate('created_at', $date)
                     ->where('link_id', $linkId)
                     ->orderByDesc('created_at')
                     ->value($baseColumn);
-    
+
                 $logs = (!is_null($firstLog) && !is_null($lastLog)) ? ($lastLog - $firstLog) : 0;
-    
+
                 if (!isset($daily[$date]['total_logs'])) {
                     $daily[$date]['total_logs'] = $logs;
                 }
-    
+
                 if (!isset($daily[$date]['links'][$linkId])) {
                     $daily[$date]['links'][$linkId] = [
                         'link_id' => $linkId,
                         'name' => $linkName,
                         'spending' => $userSpending,
                         'logs' => $logs,
-                        'last_spending' => 0,
-                        'last_logs' => 0,
-                        'last_interval' => null,
                     ];
                 } else {
                     $daily[$date]['links'][$linkId]['spending'] += $userSpending;
                 }
-    
-                if ($latestSnapshot && Carbon::parse($latestSnapshot->taken_at)->toDateString() === $date) {
-                    $daily[$date]['last_update_ago'] = Carbon::parse($latestSnapshot->taken_at)->diffForHumans();
-                    $daily[$date]['last_spending'] += $lastSpending;
-                    $daily[$date]['last_logs'] += $lastLogs;
-                    $daily[$date]['last_interval'] = $interval;
-    
-                    $daily[$date]['links'][$linkId]['last_spending'] = $lastSpending;
-                    $daily[$date]['links'][$linkId]['last_logs'] = $lastLogs;
-                    $daily[$date]['links'][$linkId]['last_interval'] = $interval;
-                }
-    
+
                 // Total spending across ALL users for this link and date
                 $totalLinkSpending = \DB::table('network_profile_stats')
                     ->join('network_profiles', 'network_profiles.id', '=', 'network_profile_stats.profile_id')
@@ -263,41 +225,86 @@ class AdminController extends Controller
                     ->where('network_profile_stats.date', $date)
                     ->selectRaw('SUM(opening_balance + topup_today - COALESCE(closing_balance, current_balance)) as total_spending')
                     ->value('total_spending') ?? 0;
-    
+
                 // CR override
                 $overrideCr = DailyProfitOverride::where('link_id', $linkId)
                     ->where('date', $date)
                     ->value('override_cr');
-    
+
                 $dynamic_cr = $totalLinkSpending > 0 ? round($logs / $totalLinkSpending, 4) : 0;
-    
+
                 $daily[$date]['links'][$linkId]['dynamic_cr'] = $dynamic_cr;
-    
+
                 $cr = $overrideCr ?? $dynamic_cr;
-    
+
                 $daily[$date]['links'][$linkId]['cr'] = $cr;
-    
+
                 if ($overrideCr) {
                     $daily[$date]['links'][$linkId]['override_cr'] = $overrideCr;
                 }
+
+                $logSnapshots = \DB::table('link_stats')
+                    ->where('link_id', $linkId)
+                    ->whereDate('created_at', $date)
+                    ->orderByDesc('created_at')
+                    ->take(2)
+                    ->get();
+
+                $logLatest = $logSnapshots->get(0);
+                $logPrevious = $logSnapshots->get(1);
+
+                $logsInterval = null;
+                $logsDiff = null;
+
+                if ($logLatest && $logPrevious) {
+                    $logsInterval = Carbon::parse($logLatest->created_at)
+                        ->diffForHumans(Carbon::parse($logPrevious->created_at), [
+                            'parts' => 1,
+                            'syntax' => Carbon::DIFF_ABSOLUTE,
+                        ]);
+
+                    $logsDiff = max(0, $logLatest->$baseColumn - $logPrevious->$baseColumn);
+                }
+
+                $spendingSnapshots = $profile->snapshots->sortByDesc('taken_at')->values();
+                $lastSnap = $spendingSnapshots->get(0);
+                $prevSnap = $spendingSnapshots->get(1);
+
+                $spendingInterval = null;
+                $spendingDiff = null;
+
+                if ($lastSnap && $prevSnap) {
+                    $spendingInterval = Carbon::parse($lastSnap->taken_at)
+                        ->diffForHumans(Carbon::parse($prevSnap->taken_at), [
+                            'parts' => 1,
+                            'syntax' => Carbon::DIFF_ABSOLUTE,
+                        ]);
+
+                    $spendingDiff = max(0, $prevSnap->balance - $lastSnap->balance);
+                }
+
+                $daily[$date]['last_spending'] = $spendingDiff;
+                $daily[$date]['spending_interval'] = $spendingInterval;
+                $daily[$date]['last_logs'] = $logsDiff;
+                $daily[$date]['logs_interval'] = $logsInterval;
             }
         }
-    
+
         // Weighted average CR per day
         foreach ($daily as &$row) {
             $linkSpendings = array_column($row['links'], 'spending');
             $sumSpending = array_sum($linkSpendings);
-    
+
             $weightedCrSum = 0;
             foreach ($row['links'] as $link) {
                 $weightedCrSum += $link['cr'] * $link['spending'];
             }
-    
+
             $row['cr'] = $sumSpending > 0 ? round($weightedCrSum / $sumSpending, 4) : 0;
         }
-    
+
         $updateInterval = Setting::where('key', 'profile_stats_update_interval')->value('value') ?? 10;
-    
+
         return Inertia::render('Admin/DailyProfit', [
             'summary' => collect($daily)->sortByDesc('date')->values()->all(),
             'users' => User::get(),
@@ -305,7 +312,7 @@ class AdminController extends Controller
             'profitPercentage' => $profitPercentage,
             'settings' => ['profile_stats_update_interval' => $updateInterval]
         ]);
-    }    
+    }
 
     public function updateDailyProfitOverride(Request $request)
     {

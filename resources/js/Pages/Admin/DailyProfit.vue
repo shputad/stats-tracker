@@ -59,9 +59,8 @@
                             <tr @click="toggleExpand(row.date)" v-if="row.spending" class="border-t hover:bg-gray-50 cursor-pointer transition">
                                 <td class="p-3 font-medium text-gray-800">
                                     {{ row.date }}
-                                    <i v-if="row.last_update_ago"
-                                        class="fas fa-info-circle text-gray-400 ml-1"
-                                        :title="`Last update ${row.last_update_ago}\nSpending: $${formatDecimal(row.last_spending)} in ${row.last_interval}\nLogs: ${row.last_logs}`">
+                                    <i v-if="row.date === today && (row.last_spending || row.last_logs)" class="fas fa-info-circle text-gray-400 ml-2"
+                                        :title="`Spending: $${formatDecimal(row.last_spending)} in ${row.spending_interval || '—'}\nLogs: ${row.last_logs || 0} in ${row.logs_interval || '—'}`">
                                     </i>
                                     <i class="fas ml-2" :class="expandedDates.includes(row.date) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                                 </td>

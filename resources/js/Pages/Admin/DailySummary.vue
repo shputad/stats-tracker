@@ -46,7 +46,7 @@
                                 @click="toggleExpand(row.date)">
                                 <td class="p-3 font-medium text-gray-800 whitespace-nowrap">
                                     {{ row.date }}
-                                    <i v-if="row.last_update_ago && row.spending_interval"
+                                    <i v-if="row.date === today && row.last_update_ago && row.spending_interval"
                                         class="fas fa-info-circle text-gray-400 ml-1"
                                         :title="`Spent $${formatDecimal(row.last_spending)} in ${row.spending_interval}. Latest update: ${row.last_update_ago}`">
                                     </i>
@@ -80,7 +80,7 @@
                                                     class="border-t hover:bg-white transition">
                                                     <td class="p-2 text-gray-700">
                                                         {{ profile.channel }} ({{ profile.account_id }})
-                                                        <i v-if="profile.last_update_at && profile.spending_interval"
+                                                        <i v-if="row.date === today && profile.last_update_at && profile.spending_interval"
                                                             class="fas fa-info-circle text-gray-400 ml-1"
                                                             :title="`Spent $${formatDecimal(profile.last_spending)} in ${profile.spending_interval}. Latest update: ${profile.last_update_at}`">
                                                         </i>
@@ -127,6 +127,7 @@ const summary = ref(props.summary || []);
 const profilesByDate = props.profilesByDate || {};
 const isRefreshing = ref(false);
 const expandedDates = ref([]);
+const today = new Date().toLocaleDateString('en-CA');
 
 const updateIntervalMinutes = parseFloat(props.settings?.profile_stats_update_interval || 10);
 const updateIntervalMs = updateIntervalMinutes * 60000;
