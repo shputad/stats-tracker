@@ -111,7 +111,7 @@
                                 </button>
                             </td>
                         </tr>
-                        <tr v-if="profiles.length === 0">
+                        <tr v-if="profiles.data.length === 0">
                             <td colspan="7" class="text-center text-gray-500 p-4">No network profiles found.</td>
                         </tr>
                     </tbody>

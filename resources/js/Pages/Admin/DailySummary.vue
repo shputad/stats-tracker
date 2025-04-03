@@ -46,6 +46,10 @@
                                 @click="toggleExpand(row.date)">
                                 <td class="p-3 font-medium text-gray-800 whitespace-nowrap">
                                     {{ row.date }}
+                                    <i class="fas fa-info-circle text-gray-400 ml-1"
+                                        v-if="row.last_update_at"
+                                        :title="`Last update was $${formatDecimal(row.last_10m_spending)}, latest update was ${row.last_update_at}`">
+                                    </i>
                                     <i :class="[
                                         'fas ml-2 transition-transform duration-300',
                                         expandedDates.includes(row.date) ? 'fa-chevron-up rotate-180' : 'fa-chevron-down'
@@ -74,8 +78,13 @@
                                                 <tr v-for="profile in profilesByDate[row.date]"
                                                     :key="profile.profile_id"
                                                     class="border-t hover:bg-white transition">
-                                                    <td class="p-2 text-gray-700">{{ profile.channel }} ({{
-                                                        profile.account_id }})</td>
+                                                    <td class="p-2 text-gray-700">
+                                                        {{ profile.channel }} ({{ profile.account_id }})
+                                                        <i class="fas fa-info-circle text-gray-400 ml-1"
+                                                            v-if="profile.last_update_at"
+                                                            :title="`Spent $${formatDecimal(profile.last_10m_spending)} in last update, updated ${profile.last_update_at}`">
+                                                        </i>
+                                                    </td>
                                                     <td class="p-2 text-gray-600">{{
                                                         formatDecimal(profile.opening_balance) }}</td>
                                                     <td class="p-2 text-blue-600">{{ formatDecimal(profile.topup_today)

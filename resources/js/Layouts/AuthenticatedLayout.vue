@@ -47,7 +47,7 @@
                         <Link :href="'/daily-profit'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/daily-profit') }">
-                            <i class="fas fa-usd mr-2"></i> Daily Profit
+                            <i class="fas fa-sack-dollar mr-2"></i> Daily Profit
                         </Link>
                     </li>
                     <li>

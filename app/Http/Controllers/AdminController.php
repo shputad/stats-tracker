@@ -29,18 +29,27 @@ class AdminController extends Controller
     public function dailySummary(Request $request)
     {
         $userId = $request->input('user_id', $request->user()->id);
-
         $user = User::findOrFail($userId);
-
-        $profiles = $user->networkProfiles()->with(['user', 'networkChannel', 'stats', 'link'])->get();
-
+    
+        $profiles = $user->networkProfiles()->with(['user', 'networkChannel', 'stats', 'link', 'snapshots' => function ($q) {
+            $q->latest();
+        }])->get();
+    
         $dailyStats = [];
         $dailyProfiles = [];
-
+    
         foreach ($profiles as $profile) {
+            $latestSnapshot = $profile->snapshots->first();
+            $latestUpdateAt = optional($latestSnapshot)->taken_at;
+            $latest10MinSnapshot = $profile->snapshots
+                ->where('taken_at', '>=', now()->subMinutes(10))
+                ->sortBy('taken_at')
+                ->first();
+    
             foreach ($profile->stats as $stat) {
                 $date = $stat->date;
-
+                $spending = (float) $stat->opening_balance + (float) $stat->topup_today - (float) ($stat->closing_balance ?? $stat->current_balance);
+    
                 if (!isset($dailyStats[$date])) {
                     $dailyStats[$date] = [
                         'date' => $date,
@@ -48,13 +57,25 @@ class AdminController extends Controller
                         'topup_today' => 0,
                         'closing_balance' => 0,
                         'total_logs' => 0,
+                        'last_10m_spending' => 0,
+                        'last_update_at' => null,
                     ];
                 }
-
+    
                 $dailyStats[$date]['opening_balance'] += $stat->opening_balance;
                 $dailyStats[$date]['topup_today'] += $stat->topup_today;
                 $dailyStats[$date]['closing_balance'] += $stat->closing_balance ?? $stat->current_balance;
-
+    
+                if ($latestSnapshot && Carbon::parse(optional($latestSnapshot)->taken_at)->toDateString() === $date) {
+                    $dailyStats[$date]['last_update_at'] = Carbon::parse($latestSnapshot->taken_at)->diffForHumans();
+                }
+    
+                if ($latest10MinSnapshot && Carbon::parse(optional($latest10MinSnapshot)->taken_at)->toDateString() === $date) {
+                    $balanceThen = $latest10MinSnapshot->balance;
+                    $nowBalance = optional($latestSnapshot)->balance;
+                    $dailyStats[$date]['last_10m_spending'] += ($balanceThen > $nowBalance) ? ($balanceThen - $nowBalance) : 0;
+                }
+    
                 $dailyProfiles[$date][] = [
                     'profile_id' => $profile->id,
                     'channel' => $profile->networkChannel->name,
@@ -62,48 +83,50 @@ class AdminController extends Controller
                     'opening_balance' => $stat->opening_balance,
                     'topup_today' => $stat->topup_today,
                     'closing_balance' => $stat->closing_balance ?? $stat->current_balance,
+                    'last_update_at' => Carbon::parse(optional($latestSnapshot)->taken_at)?->diffForHumans(),
+                    'last_10m_spending' => $latest10MinSnapshot && $latestSnapshot
+                        ? max(0, $latest10MinSnapshot->balance - $latestSnapshot->balance)
+                        : 0,
                 ];
             }
         }
-
-        // Logs from links
+    
         $uniqueLinks = $profiles->pluck('link')->filter()->unique('id');
-
         $linkLogsByDate = [];
-
+    
         foreach ($uniqueLinks as $link) {
             $logStats = \DB::table('link_stats')
                 ->selectRaw('DATE(created_at) as date, MIN(created_at) as min_time, MAX(created_at) as max_time')
                 ->where('link_id', $link->id)
                 ->groupByRaw('DATE(created_at)')
                 ->get();
-
+    
             foreach ($logStats as $stat) {
                 $date = $stat->date;
                 $baseColumn = $link->base_logs_type ?? 'log';
-
+    
                 $first = \DB::table('link_stats')
                     ->where('link_id', $link->id)
                     ->whereDate('created_at', $date)
                     ->where('created_at', $stat->min_time)
                     ->value($baseColumn);
-
+    
                 $last = \DB::table('link_stats')
                     ->where('link_id', $link->id)
                     ->whereDate('created_at', $date)
                     ->where('created_at', $stat->max_time)
                     ->value($baseColumn);
-
+    
                 if (!isset($linkLogsByDate[$date])) {
                     $linkLogsByDate[$date] = 0;
                 }
-
+    
                 if (!is_null($first) && !is_null($last)) {
                     $linkLogsByDate[$date] = ($linkLogsByDate[$date] ?? 0) + ($last - $first);
                 }
             }
         }
-
+    
         foreach ($linkLogsByDate as $date => $logCount) {
             if (!isset($dailyStats[$date])) {
                 $dailyStats[$date] = [
@@ -112,16 +135,17 @@ class AdminController extends Controller
                     'topup_today' => 0,
                     'closing_balance' => 0,
                     'total_logs' => 0,
+                    'last_10m_spending' => 0,
+                    'last_update_at' => null,
                 ];
             }
-
+    
             $dailyStats[$date]['total_logs'] = $logCount;
         }
-
+    
         $summary = collect($dailyStats)->sortByDesc('date')->values()->all();
-
         $updateInterval = Setting::where('key', 'profile_stats_update_interval')->value('value') ?? 10;
-
+    
         return Inertia::render('Admin/DailySummary', [
             'summary' => $summary,
             'profilesByDate' => $dailyProfiles,
