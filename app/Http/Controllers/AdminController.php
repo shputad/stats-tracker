@@ -69,6 +69,10 @@ class AdminController extends Controller
                     ];
                 }
 
+                $dailyStats[$date]['opening_balance'] += $stat->opening_balance;
+                $dailyStats[$date]['topup_today'] += $stat->topup_today;
+                $dailyStats[$date]['closing_balance'] += $stat->closing_balance ?? $stat->current_balance;
+
                 if (!isset($dailyStats[$date]['oldest_update_ago'])) {
                     $dailyStats[$date]['oldest_update_ago'] = $latestSnapshot?->taken_at;
                 } else if (strtotime($dailyStats[$date]['oldest_update_ago']) > strtotime($latestSnapshot?->taken_at)) {
