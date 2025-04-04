@@ -7,6 +7,7 @@ use App\Models\NetworkProfile;
 use App\Models\NetworkChannel;
 use App\Models\Link;
 use App\Models\User;
+use App\Models\NetworkProfileLinkAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -108,6 +109,20 @@ class NetworkProfileController extends Controller
         ]);
 
         $networkProfile->update($request->all());
+
+        if ($request->link_id != $networkProfile->link_id) {
+            // Mark old assignment as ended
+            $networkProfile->linkAssignments()
+                ->whereNull('unassigned_at')
+                ->update(['unassigned_at' => now()]);
+        
+            // Create new assignment
+            NetworkProfileLinkAssignment::create([
+                'profile_id' => $networkProfile->id,
+                'link_id' => $request->link_id,
+                'assigned_at' => now(),
+            ]);
+        }
 
         return redirect()->route('admin.network-profiles.index');
     }

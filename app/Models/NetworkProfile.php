@@ -57,4 +57,9 @@ class NetworkProfile extends Model
     {
         return $value ? Crypt::decryptString($value) : null;
     }
+
+    public function linkAssignments()
+    {
+        return $this->hasMany(NetworkProfileLinkAssignment::class, 'profile_id');
+    }
 }
