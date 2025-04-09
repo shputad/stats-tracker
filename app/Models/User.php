@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'link_id',
         'profit_percentage',
         'min_daily_profit_cap',
         'special_profit_percentage'
@@ -102,5 +103,15 @@ class User extends Authenticatable
     public function isImpersonating()
     {
         return session()->has('impersonate');
+    }
+
+    public function link()
+    {
+        return $this->belongsTo(Link::class, 'link_id');
+    }
+
+    public function linkAssignments()
+    {
+        return $this->hasMany(UserLinkAssignment::class, 'user_id');
     }
 }

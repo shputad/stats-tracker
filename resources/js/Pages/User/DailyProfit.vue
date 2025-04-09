@@ -52,6 +52,9 @@
                             <tr @click="toggleExpand(row.date)" v-if="row.spending" class="border-t hover:bg-gray-50 cursor-pointer transition">
                                 <td class="p-3 font-medium text-gray-800">
                                     {{ row.date }}
+                                    <i v-if="row.date === today && (row.last_spending || row.last_logs)" class="fas fa-info-circle text-gray-400 ml-2"
+                                        :title="`Spending: $${formatDecimal(row.last_spending)} in ${row.spending_interval || '—'} (Oldest update: ${row.oldest_snapshot_time || '—'})\nLogs: ${row.last_logs || 0} in ${row.logs_interval || '—'} (Last update: ${row.latest_log_time || '—'})`">
+                                    </i>
                                     <i class="fas ml-2" :class="expandedDates.includes(row.date) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                                 </td>
                                 <td class="p-3 text-red-600 font-semibold">{{ formatDecimal(row.spending) }}</td>
@@ -101,30 +104,10 @@
                                                 <td class="p-2 relative">
                                                     <div v-if="!editingCR[`${row.date}-${link.link_id}`]" class="w-4 flex items-center gap-2">
                                                         <span>{{ formatDecimal(link.cr) }}</span>
-                                                        <i class="fas fa-pencil-alt text-gray-400 hover:text-gray-600 cursor-pointer"
-                                                        @click="enableCrEdit(row.date, link.link_id, link.cr)"></i>
-
-                                                        <!-- If override exists, show remove option -->
-                                                        <i v-if="link.override_cr"
-                                                            class="fas fa-times-circle text-red-600 cursor-pointer"
-                                                            title="Remove CR Override"
-                                                            @click="deleteCrOverride(row.date, link.link_id)"></i>
-                                                    </div>
-
-                                                    <div v-else class="w-4 flex items-center gap-2 absolute inset-0 bg-white">
-                                                        <input type="number" step="0.0001"
-                                                            class="w-20 px-2 py-1 border rounded text-sm"
-                                                            v-model.number="crInputs[`${row.date}-${link.link_id}`]" />
-                                                        <button @click="saveCrOverride(row.date, link.link_id)" class="text-green-600">
-                                                            <i class="fas fa-check-circle text-xl"></i>
-                                                        </button>
-                                                        <button @click="cancelCrEdit(row.date, link.link_id)" class="text-orange-600">
-                                                            <i class="fas fa-times-circle text-xl"></i>
-                                                        </button>
                                                     </div>
                                                 </td>
                                                 <td class="p-2 font-semibold text-gray-800">
-                                                    {{ formatDecimal(calculateLinkProfit(link)) }}
+                                                    {{ formatDecimal(calculateLinkProfit(link, row)) }}
                                                 </td>
                                             </tr>
                                             <tr v-if="!Object.values(row.links).length">
@@ -207,98 +190,6 @@ const toggleExpand = (date) => {
     idx > -1 ? expandedDates.value.splice(idx, 1) : expandedDates.value.push(date);
 };
 
-const enableCrEdit = (date, link_id, value) => {
-    const key = `${date}-${link_id}`;
-    editingCR[key] = true;
-    crInputs[key] = parseFloat(value || 0);
-};
-
-const saveCrOverride = (date, link_id) => {
-    const key = `${date}-${link_id}`;
-    overrideForm.date = date;
-    overrideForm.link_id = link_id;
-    overrideForm.override_cr = crInputs[key];
-
-    overrideForm.post(route('admin.daily-profit.override.update'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            const summaryRow = summary.value.find(r => r.date === date);
-            const linkRow = summaryRow?.links[link_id];
-            if (!summaryRow || !linkRow) return;
-
-            // Update CR for this link
-            linkRow.cr = overrideForm.override_cr;
-            linkRow.override_cr = overrideForm.override_cr;
-
-            // Recalculate this link's profit
-            linkRow.profit = calculateLinkProfit(linkRow);
-
-            // Recalculate average CR
-            const linkCrList = Object.values(summaryRow.links).map(l => parseFloat(l.cr || 0));
-            const avgCr = linkCrList.length > 0
-                ? parseFloat((linkCrList.reduce((a, b) => a + b, 0) / linkCrList.length).toFixed(4))
-                : 0;
-            summaryRow.cr = avgCr;
-
-            // Recalculate profit for date
-            summaryRow.profit = calculateProfit(summaryRow);
-
-            // Recalculate projected profit
-            const now = new Date();
-            const hoursPassed = now.getHours() + now.getMinutes() / 60;
-            summaryRow.projected_profit = date === today && hoursPassed
-                ? parseFloat((summaryRow.profit / hoursPassed * 24).toFixed(2))
-                : calculateProfit(summaryRow);
-
-            editingCR[key] = false;
-        }
-    });
-};
-
-const cancelCrEdit = (date, link_id) => {
-    const key = `${date}-${link_id}`;
-    editingCR[key] = false;
-    delete crInputs[key];
-};
-
-const deleteCrOverride = (date, link_id) => {
-    Swal.fire({
-        title: 'Remove CR override?',
-        text: "This will delete the custom CR and use default logs-based CR.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#2563eb',
-        cancelButtonColor: '#6b7280',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            router.delete(route('admin.daily-profit.override.delete'), {
-                data: { date, link_id },
-                preserveScroll: true,
-                onSuccess: () => {
-                    const row = summary.value.find(r => r.date === date);
-                    if (!row) return;
-
-                    const link = row.links[link_id];
-                    if (link) {
-                        delete link.override_cr;
-
-                        link.cr = link.dynamic_cr;
-                        link.profit = calculateLinkProfit(link);
-
-                        const totalSpending = Object.values(row.links).reduce((sum, l) => sum + l.spending, 0);
-                        const weightedCr = Object.values(row.links).reduce((sum, l) => sum + (l.cr * l.spending), 0);
-                        row.cr = totalSpending > 0 ? +(weightedCr / totalSpending).toFixed(4) : 0;
-
-                        row.profit = calculateProfit(row).value;
-                    }
-                }
-            });
-        }
-    });
-};
-
 const formatDecimal = (val) => val !== null ? parseFloat(val).toFixed(2) : '0.00';
 
 const formattedRemainingTime = computed(() => {
@@ -346,8 +237,16 @@ const calculateProjectedProfit = (row) => {
     return hoursPassed === 0 ? 0 : parseFloat((calculateProfit(row).value / hoursPassed * 24).toFixed(2));
 };
 
-const calculateLinkProfit = (link) => {
-    const profit = ((link.spending * link.cr) - link.spending) * (profitPercentage.value / 100);
+const calculateLinkProfit = (link, row) => {
+    let proratedSpending = 0;
+
+    if (row.total_logs > link.logs) {
+        proratedSpending = link.spending / row.total_logs * link.logs;
+    } else {
+        proratedSpending = link.spending;
+    }
+
+    const profit = ((link.spending * link.cr) - proratedSpending) * (profitPercentage.value / 100);
     return parseFloat(profit.toFixed(2));
 };
 

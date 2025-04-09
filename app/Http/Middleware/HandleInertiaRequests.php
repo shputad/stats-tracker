@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\NetworkProfile;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class HandleInertiaRequests extends Middleware
@@ -47,10 +47,10 @@ class HandleInertiaRequests extends Middleware
                 'command' => session('command'),
                 'test_output' => session('test_output'),
             ],
-            'unlinkedProfilesCount' => function () use ($request) {
+            'unlinkedUsersCount' => function () use ($request) {
                 $user = $request->user();
                 return $user && $user->hasRole('admin')
-                    ? NetworkProfile::whereNull('link_id')->count()
+                    ? User::whereNull('link_id')->count()
                     : null;
             },
         ];

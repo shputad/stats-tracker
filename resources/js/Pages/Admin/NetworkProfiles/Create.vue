@@ -35,17 +35,6 @@
                     <p v-if="form.errors.channel_id" class="text-red-600 text-sm mt-1">{{ form.errors.channel_id }}</p>
                 </div>
 
-                <!-- Link -->
-                <div class="mb-4">
-                    <label for="link_id" class="block text-sm font-medium text-gray-700">Link</label>
-                    <select v-model="form.link_id" id="link_id"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option disabled value="">Select Link</option>
-                        <option v-for="link in links" :key="link.id" :value="link.id">{{ link.name }}</option>
-                    </select>
-                    <p v-if="form.errors.link_id" class="text-red-600 text-sm mt-1">{{ form.errors.link_id }}</p>
-                </div>
-
                 <!-- Account ID -->
                 <div class="mb-4">
                     <label for="account_id" class="block text-sm font-medium text-gray-700">Account ID</label>
@@ -115,12 +104,11 @@ import GoBack from '@/Components/GoBack.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 
-defineProps({ users: Array, channels: Array, links: Array });
+defineProps({ users: Array, channels: Array });
 
 const form = useForm({
     user_id: '',
     channel_id: '',
-    link_id: '',
     account_id: '',
     api_username: '',
     api_password: '',

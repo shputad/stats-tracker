@@ -22,6 +22,7 @@
                             <th class="p-3 text-center">Role</th>
                             <th class="p-3 text-center">Profit %</th>
                             <th class="p-3 text-center">Status</th>
+                            <th class="p-3 text-left">Link</th>
                             <th class="p-3 text-center">Actions</th>
                         </tr>
                     </thead>
@@ -58,6 +59,9 @@
                                 ]">
                                     {{ user.status.charAt(0).toUpperCase() + user.status.slice(1) }}
                                 </span>
+                            </td>
+                            <td class="p-3 text-gray-700">
+                                {{ user.link ? user.link.name : '—' }}
                             </td>
                             <td class="p-3 text-center">
                                 <div class="flex justify-center space-x-3">

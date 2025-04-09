@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NetworkProfile;
 use App\Models\NetworkChannel;
-use App\Models\Link;
 use App\Models\User;
-use App\Models\NetworkProfileLinkAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -26,7 +24,7 @@ class NetworkProfileController extends Controller
             $query->where('user_id', $userId);
         }
 
-        $profiles = $query->with('networkChannel', 'link', 'user')
+        $profiles = $query->with('networkChannel', 'user')
             ->orderBy('id')
             ->paginate(25)
             ->withQueryString();
@@ -45,7 +43,6 @@ class NetworkProfileController extends Controller
     {
         return Inertia::render('Admin/NetworkProfiles/Create', [
             'channels' => NetworkChannel::all(),
-            'links' => Link::all(),
             'users' => User::where('status', 'active')->get(),
         ]);
     }
@@ -58,7 +55,6 @@ class NetworkProfileController extends Controller
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'channel_id' => 'required|exists:network_channels,id',
-            'link_id' => 'required|exists:links,id',
             'account_id' => 'required|string|max:255',
             'api_username' => 'nullable|string|max:255',
             'api_password' => 'nullable|string|max:255',
@@ -85,9 +81,8 @@ class NetworkProfileController extends Controller
     public function edit(NetworkProfile $networkProfile)
     {
         return Inertia::render('Admin/NetworkProfiles/Edit', [
-            'profile' => $networkProfile->load('networkChannel', 'link', 'user'),
+            'profile' => $networkProfile->load('networkChannel', 'user'),
             'channels' => NetworkChannel::all(),
-            'links' => Link::all(),
             'users' => User::where('status', 'active')->get(),
         ]);
     }
@@ -100,7 +95,6 @@ class NetworkProfileController extends Controller
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'channel_id' => 'required|exists:network_channels,id',
-            'link_id' => 'required|exists:links,id',
             'account_id' => 'required|string|max:255',
             'api_username' => 'nullable|string|max:255',
             'api_password' => 'nullable|string|max:255',
@@ -109,20 +103,6 @@ class NetworkProfileController extends Controller
         ]);
 
         $networkProfile->update($request->all());
-
-        if ($request->link_id != $networkProfile->link_id) {
-            // Mark old assignment as ended
-            $networkProfile->linkAssignments()
-                ->whereNull('unassigned_at')
-                ->update(['unassigned_at' => now()]);
-        
-            // Create new assignment
-            NetworkProfileLinkAssignment::create([
-                'profile_id' => $networkProfile->id,
-                'link_id' => $request->link_id,
-                'assigned_at' => now(),
-            ]);
-        }
 
         return redirect()->route('admin.network-profiles.index');
     }

@@ -41,13 +41,7 @@
                         <Link :href="'/admin/network-profiles'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/network-profiles') }">
-                            <i class="fas fa-user-circle mr-2"></i> Network Profiles
-                            <span v-if="unlinkedProfilesCount > 0"
-                                class="ml-auto bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full"
-                                :title="`${unlinkedProfilesCount} profile(s) missing links – please review`"
-                            >
-                                {{ unlinkedProfilesCount }}
-                            </span>
+                        <i class="fas fa-user-circle mr-2"></i> Network Profiles
                         </Link>
                     </li>
                     <li>
@@ -68,7 +62,13 @@
                         <Link :href="'/admin/users'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/users') }">
-                        <i class="fas fa-users mr-2"></i> Users
+                            <i class="fas fa-users mr-2"></i> Users
+                            <span v-if="unlinkedUsersCount > 0"
+                                class="ml-auto bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full"
+                                :title="`${unlinkedUsersCount} users(s) missing links – please review`"
+                            >
+                                {{ unlinkedUsersCount }}
+                            </span>
                         </Link>
                     </li>
                     <li>
@@ -132,7 +132,7 @@ const isImpersonating = usePage().props.auth.user.isImpersonating || false;
 const isDesktop = ref(false);
 
 // Fetch the count of unlinked network profiles from the backend
-const unlinkedProfilesCount = ref(usePage().props.unlinkedProfilesCount || 0);
+const unlinkedUsersCount = ref(usePage().props.unlinkedUsersCount || 0);
 
 const toggleSidebar = () => {
     showSidebar.value = !showSidebar.value;

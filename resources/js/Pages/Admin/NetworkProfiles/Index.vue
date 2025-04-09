@@ -31,7 +31,6 @@
                         <tr>
                             <th class="p-3 text-left">User</th>
                             <th class="p-3 text-left">Channel</th>
-                            <th class="p-3 text-left">Link</th>
                             <th class="p-3 text-left">Account ID</th>
                             <th class="p-3 text-left">API Username</th>
                             <th class="p-3 text-left">API Key</th>
@@ -47,9 +46,6 @@
                         >
                             <td class="p-3 font-medium text-gray-800">{{ profile.user.name }}</td>
                             <td class="p-3 text-gray-700">{{ profile.network_channel.name }}</td>
-                            <td class="p-3 text-gray-700">
-                                {{ profile.link ? profile.link.name : '—' }}
-                            </td>
                             <td class="p-3 text-gray-700">{{ profile.account_id }}</td>
                             <td class="p-3 text-gray-700 max-w-[220px] truncate">
                                 <span v-if="profile.api_username" class="truncate inline-block max-w-[180px]" :title="profile.api_username">

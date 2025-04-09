@@ -66,6 +66,17 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-4">
+                    <!-- Link -->
+                    <div class="flex-1">
+                        <label for="link_id" class="block text-sm font-medium text-gray-700">Link</label>
+                        <select v-model="form.link_id" id="link_id"
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option disabled value="">Select Link</option>
+                            <option v-for="link in links" :key="link.id" :value="link.id">{{ link.name }}</option>
+                        </select>
+                        <p v-if="form.errors.link_id" class="text-red-600 text-sm mt-1">{{ form.errors.link_id }}</p>
+                    </div>
+
                     <!-- Profit Percentage -->
                     <div class="flex-1">
                         <label for="profit_percentage" class="block text-sm font-medium text-gray-700">Profit Percentage</label>
@@ -73,7 +84,9 @@
                             class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
                         <p v-if="form.errors.profit_percentage" class="text-red-600 text-sm mt-1">{{ form.errors.profit_percentage }}</p>
                     </div>
+                </div>
 
+                <div class="flex flex-col sm:flex-row gap-4">
                     <!-- Min Daily Profit Cap -->
                     <div class="flex-1">
                         <label for="min_daily_profit_cap" class="block text-sm font-medium text-gray-700">
@@ -85,18 +98,19 @@
                             {{ form.errors.min_daily_profit_cap }}
                         </p>
                     </div>
-                </div>
 
-                 <!-- Special Profit Percentage (shown only if cap is set) -->
-                 <div v-if="form.min_daily_profit_cap">
-                    <label for="special_profit_percentage" class="block text-sm font-medium text-gray-700">
-                        Special Profit % (if cap not met)
-                    </label>
-                    <input v-model="form.special_profit_percentage" id="special_profit_percentage" type="number"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
-                    <p v-if="form.errors.special_profit_percentage" class="text-red-600 text-sm mt-1">
-                        {{ form.errors.special_profit_percentage }}
-                    </p>
+                    <!-- Special Profit Percentage (shown only if cap is set) -->
+                    <div v-if="form.min_daily_profit_cap" class="flex-1">
+                        <label for="special_profit_percentage" class="block text-sm font-medium text-gray-700">
+                            Special Profit % (if cap not met)
+                        </label>
+                        <input v-model="form.special_profit_percentage" id="special_profit_percentage" type="number"
+                            class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" />
+                        <p v-if="form.errors.special_profit_percentage" class="text-red-600 text-sm mt-1">
+                            {{ form.errors.special_profit_percentage }}
+                        </p>
+                    </div>
+                    <div v-else class="flex-1"></div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -120,6 +134,8 @@ import GoBack from '@/Components/GoBack.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 
+defineProps({ links: Array });
+
 const form = useForm({
     name: '',
     email: '',
@@ -127,6 +143,7 @@ const form = useForm({
     password_confirmation: '',
     role: 'user',
     status: '',
+    link_id: '',
     profit_percentage: '',
     min_daily_profit_cap: '',
     special_profit_percentage: '',

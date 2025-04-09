@@ -134,7 +134,7 @@
                                                     </div>
                                                 </td>
                                                 <td class="p-2 font-semibold text-gray-800">
-                                                    {{ formatDecimal(calculateLinkProfit(link)) }}
+                                                    {{ formatDecimal(calculateLinkProfit(link, row)) }}
                                                 </td>
                                             </tr>
                                             <tr v-if="!Object.values(row.links).length">
@@ -242,14 +242,14 @@ const saveCrOverride = (date, link_id) => {
             linkRow.override_cr = overrideForm.override_cr;
 
             // Recalculate this link's profit
-            linkRow.profit = calculateLinkProfit(linkRow);
+            linkRow.profit = calculateLinkProfit(linkRow, summaryRow);
 
             // Recalculate average CR
             const linkCrList = Object.values(summaryRow.links).map(l => parseFloat(l.cr || 0));
-            const avgCr = linkCrList.length > 0
-                ? parseFloat((linkCrList.reduce((a, b) => a + b, 0) / linkCrList.length).toFixed(4))
+            const summedCr = linkCrList.length > 0
+                ? (linkCrList.reduce((a, b) => a + b, 0))
                 : 0;
-            summaryRow.cr = avgCr;
+            summaryRow.cr = summedCr;
 
             // Recalculate profit for date
             summaryRow.profit = calculateProfit(summaryRow);
@@ -296,11 +296,11 @@ const deleteCrOverride = (date, link_id) => {
                         delete link.override_cr;
 
                         link.cr = link.dynamic_cr;
-                        link.profit = calculateLinkProfit(link);
+                        link.profit = calculateLinkProfit(link, row);
 
                         const totalSpending = Object.values(row.links).reduce((sum, l) => sum + l.spending, 0);
-                        const weightedCr = Object.values(row.links).reduce((sum, l) => sum + (l.cr * l.spending), 0);
-                        row.cr = totalSpending > 0 ? +(weightedCr / totalSpending).toFixed(4) : 0;
+                        const summedCr = Object.values(row.links).reduce((sum, l) => sum + l.cr, 0);
+                        row.cr = totalSpending > 0 ? summedCr : 0;
 
                         row.profit = calculateProfit(row).value;
                     }
@@ -358,8 +358,16 @@ const calculateProjectedProfit = (row) => {
     return hoursPassed === 0 ? 0 : parseFloat((calculateProfit(row).value / hoursPassed * 24).toFixed(2));
 };
 
-const calculateLinkProfit = (link) => {
-    const profit = ((link.spending * link.cr) - link.spending) * (profitPercentage.value / 100);
+const calculateLinkProfit = (link, row) => {
+    let proratedSpending = 0;
+
+    if (row.total_logs > link.logs) {
+        proratedSpending = link.spending / row.total_logs * link.logs;
+    } else {
+        proratedSpending = link.spending;
+    }
+
+    const profit = ((link.spending * link.cr) - proratedSpending) * (profitPercentage.value / 100);
     return parseFloat(profit.toFixed(2));
 };
 

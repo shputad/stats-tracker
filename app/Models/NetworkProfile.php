@@ -11,7 +11,7 @@ class NetworkProfile extends Model
     /** @use HasFactory<\Database\Factories\NetworkProfileFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id', 'channel_id', 'link_id', 'account_id', 'api_username', 'api_password', 'api_key', 'status'];
+    protected $fillable = ['user_id', 'channel_id', 'account_id', 'api_username', 'api_password', 'api_key', 'status'];
 
     public function user()
     {
@@ -21,11 +21,6 @@ class NetworkProfile extends Model
     public function networkChannel()
     {
         return $this->belongsTo(NetworkChannel::class, 'channel_id');
-    }
-
-    public function link()
-    {
-        return $this->belongsTo(Link::class, 'link_id');
     }
 
     public function stats()
@@ -56,10 +51,5 @@ class NetworkProfile extends Model
     public function getApiPasswordAttribute($value)
     {
         return $value ? Crypt::decryptString($value) : null;
-    }
-
-    public function linkAssignments()
-    {
-        return $this->hasMany(NetworkProfileLinkAssignment::class, 'profile_id');
     }
 }

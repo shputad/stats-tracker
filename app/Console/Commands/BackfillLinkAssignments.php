@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\User;
+use App\Models\UserLinkAssignment;
 
 class BackfillLinkAssignments extends Command
 {
@@ -18,22 +20,22 @@ class BackfillLinkAssignments extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Backfill current user link assignments.';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        \App\Models\NetworkProfile::whereNotNull('link_id')->get()->each(function ($networkProfile) {
-            \App\Models\NetworkProfileLinkAssignment::firstOrCreate([
-                'profile_id' => $networkProfile->id,
-                'link_id' => $networkProfile->link_id,
+        User::whereNotNull('link_id')->get()->each(function ($user) {
+            UserLinkAssignment::firstOrCreate([
+                'user_id' => $user->id,
+                'link_id' => $user->link_id,
             ], [
-                'assigned_at' => $networkProfile->created_at ?? now(),
+                'assigned_at' => $user->created_at ?? now(),
             ]);
         });
-    
-        $this->info('Backfilled current link assignments.');
+
+        $this->info('Backfilled user link assignments.');
     }
 }

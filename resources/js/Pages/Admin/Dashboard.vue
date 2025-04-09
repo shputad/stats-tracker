@@ -82,7 +82,6 @@
                             <tr>
                                 <th class="text-left p-3 border-b">Channel</th>
                                 <th class="text-left p-3 border-b">Account ID</th>
-                                <th class="text-left p-3 border-b">Link</th>
                                 <th class="text-center p-3 border-b">Status</th>
                             </tr>
                         </thead>
@@ -90,7 +89,6 @@
                             <tr v-for="profile in recentProfiles" :key="profile.id" class="hover:bg-gray-50">
                                 <td class="p-3 border-b">{{ profile.network_channel.name }}</td>
                                 <td class="p-3 border-b">{{ profile.account_id }}</td>
-                                <td class="p-3 border-b">{{ profile.link?.name ?? '—' }}</td>
                                 <td class="p-3 border-b text-center">
                                     <span :class="`px-2 py-1 rounded text-xs text-white font-bold ${profile.status === 'active' ? 'bg-green-600' : 'bg-red-600'}`">
                                         {{ String(profile.status).charAt(0).toUpperCase() + String(profile.status).slice(1) }}
