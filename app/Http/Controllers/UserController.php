@@ -312,10 +312,6 @@ class UserController extends Controller
                     $daily[$date]['last_logs'] = $logsDiff;
                     $daily[$date]['logs_interval'] = $logsInterval;
 
-                    $spendingSnapshots = $profile->snapshots->sortByDesc('taken_at')->values();
-                    $lastSnap = $spendingSnapshots->get(0);
-                    $prevSnap = $spendingSnapshots->get(1);
-
                     // Set oldest snapshot (for spending)
                     if (!isset($daily[$date]['oldest_snapshot_time']) || strtotime($daily[$date]['oldest_snapshot_time']) > strtotime($lastSnap?->taken_at)) {
                         $daily[$date]['oldest_snapshot_time'] = $lastSnap?->taken_at;
