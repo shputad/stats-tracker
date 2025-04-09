@@ -189,6 +189,10 @@ class AdminController extends Controller
                         'spending' => 0,
                         'total_logs' => 0,
                         'cr' => 0,
+                        'last_spending' => 0,
+                        'last_logs' => 0,
+                        'spending_interval' => '',
+                        'logs_interval' => '',
                         'oldest_snapshot_time' => '',
                         'latest_log_time' => '',
                         'links' => [],
@@ -241,6 +245,69 @@ class AdminController extends Controller
                             $spendingByProfile[$date][$profile->id] = $spending;
                             $daily[$date]['links'][$linkId]['spending'] += $spending;
                         }
+                    }
+
+                    $logSnapshots = \DB::table('link_stats')
+                        ->where('link_id', $linkId)
+                        ->whereDate('created_at', $date)
+                        ->orderByDesc('created_at')
+                        ->take(2)
+                        ->get();
+
+                    $logLatest = $logSnapshots->get(0);
+                    $logPrevious = $logSnapshots->get(1);
+
+                    $logsInterval = null;
+                    $logsDiff = null;
+
+                    if ($logLatest && $logPrevious) {
+                        $logsInterval = Carbon::parse($logLatest->created_at)
+                            ->diffForHumans(Carbon::parse($logPrevious->created_at), [
+                                'parts' => 1,
+                                'syntax' => Carbon::DIFF_ABSOLUTE,
+                            ]);
+
+                        $logsDiff = max(0, $logLatest->$baseColumn - $logPrevious->$baseColumn);
+                    }
+
+                    $spendingSnapshots = $profile->snapshots->sortByDesc('taken_at')->values();
+                    $lastSnap = $spendingSnapshots->get(0);
+                    $prevSnap = $spendingSnapshots->get(1);
+
+                    $spendingInterval = null;
+                    $spendingDiff = null;
+
+                    if ($lastSnap && $prevSnap) {
+                        $spendingInterval = Carbon::parse($lastSnap->taken_at)
+                            ->diffForHumans(Carbon::parse($prevSnap->taken_at), [
+                                'parts' => 1,
+                                'syntax' => Carbon::DIFF_ABSOLUTE,
+                            ]);
+
+                        $spendingDiff = max(0, $prevSnap->balance - $lastSnap->balance);
+                    }
+
+                    if (isset($daily[$date]['last_spending'])) {
+                        $daily[$date]['last_spending'] += $spendingDiff;
+                    } else {
+                        $daily[$date]['last_spending'] = $spendingDiff;
+                    }
+
+                    $daily[$date]['spending_interval'] = $spendingInterval;
+                    $daily[$date]['last_logs'] = $logsDiff;
+                    $daily[$date]['logs_interval'] = $logsInterval;
+
+                    $spendingSnapshots = $profile->snapshots->sortByDesc('taken_at')->values();
+                    $lastSnap = $spendingSnapshots->get(0);
+                    $prevSnap = $spendingSnapshots->get(1);
+
+                    // Set oldest snapshot (for spending)
+                    if (!isset($daily[$date]['oldest_snapshot_time']) || $lastSnap?->taken_at < $daily[$date]['oldest_snapshot_time']) {
+                        $daily[$date]['oldest_snapshot_time'] = $lastSnap?->taken_at;
+                    }
+
+                    if (!isset($daily[$date]['latest_log_time']) || $logLatest?->created_at > $daily[$date]['latest_log_time']) {
+                        $daily[$date]['latest_log_time'] = $logLatest?->created_at;
                     }
                 }
             }
