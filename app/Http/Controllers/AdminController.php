@@ -297,16 +297,12 @@ class AdminController extends Controller
                     $daily[$date]['last_logs'] = $logsDiff;
                     $daily[$date]['logs_interval'] = $logsInterval;
 
-                    $spendingSnapshots = $profile->snapshots->sortByDesc('taken_at')->values();
-                    $lastSnap = $spendingSnapshots->get(0);
-                    $prevSnap = $spendingSnapshots->get(1);
-
                     // Set oldest snapshot (for spending)
-                    if (!isset($daily[$date]['oldest_snapshot_time']) || strtotime($daily[$date]['oldest_snapshot_time']) > strtotime($lastSnap?->taken_at)) {
+                    if (!isset($daily[$date]['oldest_snapshot_time']) || !strtotime($daily[$date]['oldest_snapshot_time']) || strtotime($daily[$date]['oldest_snapshot_time']) > strtotime($lastSnap?->taken_at)) {
                         $daily[$date]['oldest_snapshot_time'] = $lastSnap?->taken_at;
                     }
 
-                    if (!isset($daily[$date]['latest_log_time']) || strtotime($logLatest?->created_at) > strtotime($daily[$date]['latest_log_time'])) {
+                    if (!isset($daily[$date]['latest_log_time']) || !strtotime($daily[$date]['latest_log_time']) || strtotime($logLatest?->created_at) > strtotime($daily[$date]['latest_log_time'])) {
                         $daily[$date]['latest_log_time'] = $logLatest?->created_at;
                     }
                 }
