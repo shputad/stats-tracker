@@ -2,7 +2,7 @@
     <Head title="Lander Builder" />
 
     <AdminLayout>
-        <div class="mx-auto">
+        <div class="mx-auto max-w-3xl">
             <h1 class="text-2xl font-bold mb-6">
                 <GoBack :href="route('admin.tools.index')" /> Lander Builder
             </h1>

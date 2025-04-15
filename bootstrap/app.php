@@ -13,12 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
+            \App\Http\Middleware\RequireToolsPassword::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         // Register custom middleware alias
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'tools.password' => \App\Http\Middleware\RequireToolsPassword::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

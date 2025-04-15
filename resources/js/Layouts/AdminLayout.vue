@@ -82,14 +82,7 @@
                         <Link :href="'/admin/tools'"
                             class="flex items-center px-2 py-2 rounded hover:bg-gray-700 transition relative group"
                             :class="{ 'bg-gray-700 text-orange-200': currentRoute.includes('/admin/tools') }">
-                            <i class="fas fa-tools mr-2 opacity-50 group-hover:opacity-80"></i>
-                            <span class="line-through opacity-60 group-hover:opacity-90">Tools</span>
-                            <span 
-                                class="absolute top-1/2 right-5 text-[16px] text-yellow-400 px-1 rounded-full transform translate-x-1/2 -translate-y-1/2 shadow-md"
-                                title="This section has been discontinued"
-                            >
-                                <i class="fas fa-circle-exclamation"></i>
-                            </span>
+                            <i class="fas fa-tools mr-2"></i> Tools
                         </Link>
                     </li>
                     <li>

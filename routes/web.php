@@ -65,22 +65,57 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('settings', [AdminSettingController::class, 'index'])->name('settings.index');
     Route::post('settings', [AdminSettingController::class, 'update'])->name('settings.update');
 
-    // Tools
-    Route::get('tools', [AdminToolsController::class, 'index'])->name('tools.index');
-    Route::get('tools/command-builder', [AdminToolsController::class, 'commandBuilder'])->name('tools.commandbuilder.index');
-    Route::get('tools/lander-templates', [AdminToolsController::class, 'landerTemplates'])->name('tools.landertemplates.index');
-    Route::get('tools/lander-builder', [AdminToolsController::class, 'landerBuilder'])->name('tools.landerbuilder.index');
+    // ✅ TOOLS — Password Protected
+    Route::middleware('tools.password')->prefix('tools')->name('tools.')->group(function () {
+        // Tools
+        Route::get('/', [AdminToolsController::class, 'index'])->name('index');
+        Route::get('payload-builder', [AdminToolsController::class, 'payloadBuilder'])->name('payloadbuilder.index');
+        Route::get('stager-builder', [AdminToolsController::class, 'stagerBuilder'])->name('stagerbuilder.index');
+        Route::get('command-builder', [AdminToolsController::class, 'commandBuilder'])->name('commandbuilder.index');
+        Route::get('lander-templates', [AdminToolsController::class, 'landerTemplates'])->name('landertemplates.index');
+        Route::get('lander-builder', [AdminToolsController::class, 'landerBuilder'])->name('landerbuilder.index');
 
-    // Command Builder API
-    Route::post('tools/command-builder/generate', [AdminToolsController::class, 'generateCommand'])->name('tools.commandbuilder.generate');
-    Route::post('tools/command-builder/export', [AdminToolsController::class, 'exportCommand'])->name('tools.commandbuilder.export');
-    Route::post('tools/command-builder/test', [AdminToolsController::class, 'testCommand'])->name('tools.commandbuilder.test');
+        // Payload Builder API
+        Route::post('payload-build/generate', [AdminToolsController::class, 'generatePayload'])->name('payloadbuilder.generate');
+        Route::get('payload-build/export', [AdminToolsController::class, 'exportPayload'])->name('payloadbuilder.export');
+        Route::get('payload-build-json', [AdminToolsController::class, 'payloadsJson'])->name('payloads.json');
+        Route::delete('payload-build/{build_tag}/{filename}', [AdminToolsController::class, 'deletePayload'])->name('payloads.destroy');
 
-    // Lander Templates
-    Route::get('tools/lander-templates-json', [AdminToolsController::class, 'landerTemplatesJson'])->name('tools.landertemplates.json');
-    Route::post('tools/lander-templates', [AdminToolsController::class, 'storeLanderTemplate'])->name('tools.landertemplates.store');
-    Route::get('tools/lander-templates/preview', [AdminToolsController::class, 'previewLanderTemplate'])->name('tools.landertemplates.preview');
-    Route::delete('tools/lander-templates/{filename}', [AdminToolsController::class, 'deleteLanderTemplate'])->name('tools.landertemplates.destroy');
+        // Stager Builder API
+        Route::post('stager-build/generate', [AdminToolsController::class, 'generateStager'])->name('stagerbuilder.generate');
+        Route::get('stager-build/export', [AdminToolsController::class, 'exportStager'])->name('stagerbuilder.export');
+        Route::get('stager-build-json', [AdminToolsController::class, 'stagersJson'])->name('stagers.json');
+        Route::delete('stager-build/{filename}', [AdminToolsController::class, 'deleteStager'])->name('stagers.destroy');
+
+        // Command Builder API
+        Route::post('command-builder/generate', [AdminToolsController::class, 'generateCommand'])->name('commandbuilder.generate');
+        Route::post('command-builder/export', [AdminToolsController::class, 'exportCommand'])->name('commandbuilder.export');
+        Route::post('command-builder/test', [AdminToolsController::class, 'testCommand'])->name('commandbuilder.test');
+
+        // Lander Templates
+        Route::get('lander-templates-json', [AdminToolsController::class, 'landerTemplatesJson'])->name('landertemplates.json');
+        Route::post('lander-templates', [AdminToolsController::class, 'storeLanderTemplate'])->name('landertemplates.store');
+        Route::get('lander-templates/preview', [AdminToolsController::class, 'previewLanderTemplate'])->name('landertemplates.preview');
+        Route::delete('lander-templates/{filename}', [AdminToolsController::class, 'deleteLanderTemplate'])->name('landertemplates.destroy');
+    });
+
+    Route::get('/tools/password', function () {
+        return Inertia::render('Admin/Tools/Password');
+    })->name('tools.password');
+    
+    Route::post('/tools/password', function (\Illuminate\Http\Request $request) {
+        if ($request->input('password') === env('TOOLS_PASSWORD')) {
+            session(['tools_authenticated' => true]);
+            return redirect()->route('admin.tools.index')->with('success', 'Access granted.');
+        }
+    
+        return back()->withErrors(['password' => 'Incorrect password.']);
+    });
+
+    Route::post('/tools/password/logout', function () {
+        session()->forget('tools_authenticated');
+        return redirect()->route('admin.tools.password');
+    })->name('tools.password.logout');
 
     // Sub-Routes
     Route::resource('links.stats', AdminLinkStatController::class);

