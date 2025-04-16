@@ -13,6 +13,9 @@
                     </label>
                     <input type="url" id="payloadUrl" v-model="form.payloadUrl" placeholder="Enter payload url"
                         class="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+                    <p class="text-sm text-yellow-700 mt-1">
+                        ⚠️ Only direct `.exe` file URLs are supported. Archives like `.zip` are not supported here.
+                    </p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4 mb-4">
                     <div class="flex-1">
