@@ -43,6 +43,7 @@
                             <option value="lumma">Lumma</option>
                             <option value="vidar">Vidar</option>
                             <option value="rhadamanthys">Rhadamanthys</option>
+                            <option value="stealc">Stealc</option>
                         </select>
                         <p v-if="form.errors.type" class="text-red-600 text-sm mt-1">{{ form.errors.type }}</p>
                     </div>

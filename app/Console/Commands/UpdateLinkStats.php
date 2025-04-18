@@ -194,6 +194,31 @@ class UpdateLinkStats extends Command
                     if (!empty($logsCount)) {
                         return $logsCount;
                     }
+                } elseif ($link->type === 'stealc') {
+                    $logsCount = null;
+                
+                    try {
+                        $node = $crawler->filter('h6#logs_count');
+                        if ($node->count() > 0) {
+                            $logsCount = trim($node->text());
+
+                            if ($logsCount === '?') {
+                                Log::warning("⚠️ Logs not loaded correctly. Try fallback.", ['link_id' => $link->id]);
+                            } else {
+                                $logsCount = intval($logsCount);
+                                Log::info("🛠️ Stealc logsCount fetched: $logsCount", ['link_id' => $link->id]);
+                    
+                                return ['logsCount' => $logsCount];
+                            }
+                        } else {
+                            Log::warning("⚠️ No h6#logs_count found in stealc page.", ['link_id' => $link->id]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("❌ Error parsing h6#logs_count for stealc", [
+                            'link_id' => $link->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
             } else {
                 Log::warning("Original request to {$link->url} was not successful.", [
