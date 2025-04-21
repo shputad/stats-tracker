@@ -58,7 +58,7 @@
                 </div>
 
                 <!-- API URL (Conditional) -->
-                <div v-if="form.type === 'rhadamanthys'">
+                <div v-if="form.type === 'rhadamanthys' || form.type === 'stealc'">
                     <label for="api_url" class="block text-sm font-medium text-gray-700">API URL</label>
                     <textarea v-model="form.api_url" id="api_url"
                         class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"></textarea>

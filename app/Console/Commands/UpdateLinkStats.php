@@ -195,26 +195,44 @@ class UpdateLinkStats extends Command
                         return $logsCount;
                     }
                 } elseif ($link->type === 'stealc') {
+                    $apiUrl = $link->api_url;
+                    $buildTag = $link->build_tag;
                     $logsCount = null;
-                
-                    try {
-                        $node = $crawler->filter('h6#logs_count');
-                        if ($node->count() > 0) {
-                            $logsCount = trim($node->text());
 
-                            if ($logsCount === '?') {
-                                Log::warning("⚠️ Logs not loaded correctly. Try fallback.", ['link_id' => $link->id]);
-                            } else {
-                                $logsCount = intval($logsCount);
-                                Log::info("🛠️ Stealc logsCount fetched: $logsCount", ['link_id' => $link->id]);
-                    
+                    try {
+                        $response = Http::asMultipart()->withoutVerifying()->timeout(180)->post($apiUrl, [
+                            [
+                                'name' => 'method',
+                                'contents' => 'get_stats',
+                            ],
+                            [
+                                'name' => 'build_name',
+                                'contents' => $link->build_tag,
+                            ],
+                        ]);
+
+                        if ($response->successful()) {
+                            $data = $response->json();
+                            if (isset($data['logs_count'])) {
+                                $logsCount = intval($data['logs_count']);
+                                Log::info("✅ Stealc logs fetched via API: $logsCount", ['link_id' => $link->id]);
+
                                 return ['logsCount' => $logsCount];
+                            } else {
+                                Log::warning("⚠️ No logs_count found in API response", [
+                                    'link_id' => $link->id,
+                                    'response' => $data
+                                ]);
                             }
                         } else {
-                            Log::warning("⚠️ No h6#logs_count found in stealc page.", ['link_id' => $link->id]);
+                            Log::error("❌ Stealc API returned error", [
+                                'link_id' => $link->id,
+                                'status' => $response->status(),
+                                'body' => $response->body()
+                            ]);
                         }
                     } catch (\Exception $e) {
-                        Log::error("❌ Error parsing h6#logs_count for stealc", [
+                        Log::error("❌ Exception calling Stealc API", [
                             'link_id' => $link->id,
                             'error' => $e->getMessage()
                         ]);
