@@ -108,7 +108,7 @@ class UpdateLinkStats extends Command
                 // Use DomCrawler to parse the HTML content
                 $crawler = new \Symfony\Component\DomCrawler\Crawler($content);
 
-                if ($link->type === 'lumma') {
+                if ($link->type === 'a') {
                     $divNodes = $crawler->filter('div.font-weight-medium');
 
                     $logsCount = null;
@@ -131,7 +131,7 @@ class UpdateLinkStats extends Command
                     } else {
                         Log::warning("No logs count found using 'логов' reference.", ['link_id' => $link->id]);
                     }
-                } elseif ($link->type === 'rhadamanthys') {
+                } elseif ($link->type === 'c') {
                     $apiUrl = $link->api_url;
                     $buildTag = $link->build_tag;
                     $logsCount = [];
@@ -194,7 +194,7 @@ class UpdateLinkStats extends Command
                     if (!empty($logsCount)) {
                         return $logsCount;
                     }
-                } elseif ($link->type === 'stealc') {
+                } elseif ($link->type === 'd') {
                     $apiUrl = $link->api_url;
                     $buildTag = $link->build_tag;
                     $logsCount = null;
@@ -215,7 +215,7 @@ class UpdateLinkStats extends Command
                             $data = $response->json();
                             if (isset($data['logs_count'])) {
                                 $logsCount = intval($data['logs_count']);
-                                Log::info("✅ Stealc logs fetched via API: $logsCount", ['link_id' => $link->id]);
+                                Log::info("✅ D logs fetched via API: $logsCount", ['link_id' => $link->id]);
 
                                 return ['logsCount' => $logsCount];
                             } else {
@@ -225,14 +225,14 @@ class UpdateLinkStats extends Command
                                 ]);
                             }
                         } else {
-                            Log::error("❌ Stealc API returned error", [
+                            Log::error("❌ D API returned error", [
                                 'link_id' => $link->id,
                                 'status' => $response->status(),
                                 'body' => $response->body()
                             ]);
                         }
                     } catch (\Exception $e) {
-                        Log::error("❌ Exception calling Stealc API", [
+                        Log::error("❌ Exception calling D API", [
                             'link_id' => $link->id,
                             'error' => $e->getMessage()
                         ]);

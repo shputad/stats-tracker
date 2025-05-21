@@ -39,10 +39,10 @@
                         <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
                         <select v-model="form.type" id="type"
                             class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="lumma">Lumma</option>
-                            <option value="vidar">Vidar</option>
-                            <option value="rhadamanthys">Rhadamanthys</option>
-                            <option value="stealc">Stealc</option>
+                            <option value="a">A</option>
+                            <option value="b">B</option>
+                            <option value="c">C</option>
+                            <option value="d">D</option>
                         </select>
                         <p v-if="form.errors.type" class="text-red-600 text-sm mt-1">{{ form.errors.type }}</p>
                     </div>
@@ -101,7 +101,7 @@ const form = useForm({
     name: '',
     build_tag: '',
     url: '',
-    type: 'lumma',
+    type: 'a',
     status: 'active',
     api_url: '',
     base_logs_type: 'log',
